@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import varahas.main.dto.AuthDTO;
+import varahas.main.dto.AuthRequest;
 import varahas.main.dto.RegisterRequest;
 import varahas.main.services.AuthenticationService;
 import varahas.main.utils.SecurityUtils;
@@ -34,6 +35,12 @@ public class AuthController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(challenge);
 		}
 		AuthDTO response = authService.register(request);
+		return ResponseEntity.ok(response);
+	}
+	
+	@PostMapping("/authenticate")
+	public ResponseEntity<AuthDTO> login(@RequestBody AuthRequest request) {
+		AuthDTO response = authService.authenticate(request);
 		return ResponseEntity.ok(response);
 	}
 	
