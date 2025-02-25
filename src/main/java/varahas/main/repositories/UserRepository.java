@@ -10,8 +10,8 @@ import varahas.main.entities.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-	User findByUsername(String username);
-	User findByPhone(String phone);
+	Optional<User> findByUsername(String username);
+	Optional<User> findByPhone(String phone);
 	Optional<User> findByEmail(String email);
 	Optional<User> findByResetToken(String resetToken);
 

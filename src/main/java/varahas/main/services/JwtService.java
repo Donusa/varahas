@@ -15,8 +15,8 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import varahas.main.entities.Role;
 import varahas.main.entities.User;
+import varahas.main.enums.Roles;
 
 @Service
 public class JwtService {
@@ -78,8 +78,8 @@ public class JwtService {
 		return extractClaims(token, Claims::getExpiration);
 	}
 	
-	public Role extractRoles(String token) {
-	    return extractClaims(token, claims -> claims.get("role", Role.class));
+	public Roles extractRoles(String token) {
+	    return extractClaims(token, claims -> claims.get("role", Roles.class));
 	}
 	
 	private Key getSignInKey() {

@@ -2,8 +2,7 @@ package varahas.main.entities;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Collections;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,18 +12,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import varahas.main.enums.Roles;
 import varahas.main.enums.Status;
 
 @Entity
@@ -48,9 +45,7 @@ public class User implements UserDetails {
 	private String username;
 	@Column(nullable = false)
 	private String password;
-	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
-	private Set<Role> roles;
+	private Roles roles;
 	@Enumerated(EnumType.STRING)
 	@Builder.Default
 	private Status status = Status.ACTIVE;
@@ -62,14 +57,10 @@ public class User implements UserDetails {
 	@Column(name = "reset_token_expiry")
 	private LocalDateTime resetTokenExpiry;
 
-	@Override
-	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return roles.stream().map(role -> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList());
-	}
 
 	@Override
 	public String getUsername() {
-		return this.email;
+		return this.username;
 	}
 
 	@Override
@@ -95,6 +86,11 @@ public class User implements UserDetails {
 	@Override
 	public String toString() {
 		return "";
+	}
+
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		return Collections.singleton(new SimpleGrantedAuthority(roles.toString()));
 	}
 
 }

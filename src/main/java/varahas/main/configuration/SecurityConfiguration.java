@@ -27,6 +27,7 @@ public class SecurityConfiguration {
 	
 
     private static final String[] WHITE_LIST = { "/api/auth/**" };
+
     
 	@Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

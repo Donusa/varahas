@@ -40,7 +40,9 @@ public class AuthController {
 	
 	@PostMapping("/authenticate")
 	public ResponseEntity<AuthDTO> login(@RequestBody AuthRequest request) {
+		System.out.println("AuthController.login");
 		AuthDTO response = authService.authenticate(request);
+		System.out.println("AuthController.login: response: " + response);
 		return ResponseEntity.ok(response);
 	}
 	
