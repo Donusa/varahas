@@ -7,8 +7,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -22,12 +22,10 @@ public class ApplicationConfig {
 
 	@Bean
 	UserDetailsService userDetailsService() {
-
-		return username -> {
-			return (UserDetails) userRepository.findByEmail(username)
-					.orElseThrow(() -> new IllegalArgumentException("Invalid username: " + username));
-		};
+	    return username -> userRepository.findByUsername(username)
+	            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 	}
+
 
 	@Bean
 	PasswordEncoder passwordEncoder() {
@@ -45,12 +43,10 @@ public class ApplicationConfig {
 	}
 	
 	@Bean
-    AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        try {
-            AuthenticationManager authManager = config.getAuthenticationManager();
-            return authManager;
-        } catch (Exception e) {
-            throw e;
-        }
-    }
+	AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+	    AuthenticationManager authManager = config.getAuthenticationManager();
+	    return authManager;
+	}
+
+
 }

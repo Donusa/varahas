@@ -3,7 +3,6 @@ package varahas.main.services;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -22,14 +21,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import varahas.main.dto.AuthDTO;
 import varahas.main.dto.AuthRequest;
 import varahas.main.dto.RegisterRequest;
-import varahas.main.entities.Role;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.Token;
 import varahas.main.entities.User;
 import varahas.main.enums.Roles;
 import varahas.main.enums.Status;
 import varahas.main.enums.TokenType;
-import varahas.main.repositories.RoleRepository;
 import varahas.main.repositories.TenantRepository;
 import varahas.main.repositories.TokenRepository;
 import varahas.main.repositories.UserRepository;
@@ -49,8 +46,6 @@ public class AuthenticationService {
 	private TokenRepository tokenRepository;
 	@Autowired
 	private TenantRepository tenantRepository;
-	@Autowired
-	private RoleRepository roleRepository;
 
 	public AuthDTO register(RegisterRequest request) {
 		Roles role = switch (request.getRole()) {
@@ -59,12 +54,6 @@ public class AuthenticationService {
 		case "ROLE_DELIVERY" -> Roles.ROLE_USER;
 		default -> throw new IllegalArgumentException("Invalid role: " + request.getRole());
 		};
-		Role rol = roleRepository.findByName(role.toString())
-	            .orElseGet(() -> {
-	                Role newRole = new Role();
-	                newRole.setName(role.toString());
-	                return roleRepository.save(newRole);
-	            });
 		Tenant tenant = tenantRepository.findByName(request.getTenantName())
 	            .orElseGet(() -> {
 	                Tenant newTenant = Tenant.builder()
@@ -79,7 +68,7 @@ public class AuthenticationService {
 				.password(passwordEncoder.encode(request.getPassword()))
 				.name(request.getName())
 				.username(request.getUsername())
-				.roles(Set.of(rol))
+				.roles(role)
 				.status(Status.ACTIVE)
 				.phone(request.getPhone())
 				.tenant(tenant)
@@ -99,9 +88,14 @@ public class AuthenticationService {
 	}
 
 	public AuthDTO authenticate(AuthRequest request) {
-		authManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-		var user = userRepository.findByEmail(request.getEmail())
+		System.out.println("AuthenticationService.authenticate");
+		var user = userRepository.findByUsername(request.getUsername())
 				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+		
+		authManager.
+				authenticate(
+						new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+						);
 		var jwtToken = jwtService.generateToken(user);
 		var refreshToken = jwtService.generateRefreshToken(user);
 		revokeAllUserTokens(user);

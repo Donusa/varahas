@@ -1,6 +1,8 @@
 package varahas.main.configuration;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
@@ -26,12 +28,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 	@Autowired
 	private UserDetailsService userDetailsService;
 	
+	 private static final List<String> WHITE_LIST = Arrays.asList("/api/auth/");
+	
 	@Override
 	protected void doFilterInternal(
 			@NonNull HttpServletRequest request,
 			@NonNull HttpServletResponse response, 
 			@NonNull FilterChain filterChain)
 			throws ServletException, IOException {
+        System.out.println("JwtAuthenticationFilter.doFilterInternal");
+        
+        String requestURI = request.getRequestURI();
+        if (WHITE_LIST.stream().anyMatch(requestURI::startsWith)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         
 		final String authorizationHeader = request.getHeader("Authorization");
 		if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
