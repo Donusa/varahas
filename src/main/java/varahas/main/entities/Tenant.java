@@ -34,7 +34,6 @@ public class Tenant {
 	private Date createdAt;
 	@OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<User> users;
-	
 	@Override
 	public String toString() {
 		return "";

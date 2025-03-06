@@ -40,27 +40,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
         
         String requestURI = request.getRequestURI();
         if (WHITE_LIST.stream().anyMatch(requestURI::startsWith)) {
+        	System.out.println("white listed");
             filterChain.doFilter(request, response);
             return;
         }
-        
+        System.out.println("not whitelisted");
 		final String authorizationHeader = request.getHeader("Authorization");
 		if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+			System.out.println("Authorization header not found");
 			filterChain.doFilter(request, response);
 			return;
 		}
 		
+		System.out.println("Authorization header found");
+		
 		final String jwt = authorizationHeader.substring(7);
 		final String username = jwtService.extractUsername(jwt);
 		if(username!=null && SecurityContextHolder.getContext().getAuthentication() == null) {
+			
+			System.out.println("username found");
+			
 			UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 			if (jwtService.isTokenValid(jwt, userDetails)) {
+				
+				System.out.println("token is valid");
+				
 				UsernamePasswordAuthenticationToken authToken = 
 						new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 				authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 				SecurityContextHolder.getContext().setAuthentication(authToken);
 			}
 		}
+		
+		System.out.println("filter chain");
 		
 		filterChain.doFilter(request, response);
 	}
