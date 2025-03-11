@@ -90,7 +90,6 @@ public class JwtService {
 	public String generateRefreshToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
 		claims.put("role", user.getRoles());
-		claims.put("tenant", user.getTenant());
 		    return Jwts.builder()
 		            .setSubject(user.getEmail())
 		            .setClaims(claims)

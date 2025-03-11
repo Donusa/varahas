@@ -78,7 +78,7 @@ public class AuthenticationService {
 		String jwtToken = jwtService.generateToken(user);
 		String refreshToken = jwtService.generateRefreshToken(user);
 		saveUserToken(savedUser, jwtToken);
-		return AuthDTO.builder().accessToken(jwtToken).refreshToken(refreshToken).build();
+		return AuthDTO.builder().accessToken(jwtToken).refreshToken(refreshToken).tenant(user.getTenant().getName()).build();
 	}
 
 	private void saveUserToken(User savedUser, String jwtToken) {
@@ -91,7 +91,6 @@ public class AuthenticationService {
 		System.out.println("AuthenticationService.authenticate");
 		var user = userRepository.findByUsername(request.getUsername())
 				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
-		
 		authManager.
 				authenticate(
 						new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
@@ -103,7 +102,7 @@ public class AuthenticationService {
 		if (user.getStatus() != Status.ACTIVE) {
 			throw new IllegalArgumentException("User is not active");
 		}
-		return AuthDTO.builder().accessToken(jwtToken).refreshToken(refreshToken).build();
+		return AuthDTO.builder().accessToken(jwtToken).refreshToken(refreshToken).tenant(user.getTenant().getName()).build();
 	}
 
 	private void revokeAllUserTokens(User user) {
