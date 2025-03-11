@@ -60,6 +60,7 @@ public class JwtService {
 		Map<String, Object> claims = new HashMap<>();
 	    if (userDetails instanceof User) {
 	        claims.put("role", ((User) userDetails).getRoles());
+			claims.put("tenant", ((User) userDetails).getTenant());
 	    }
 		return generateToken(claims, userDetails);
 	}
@@ -91,8 +92,8 @@ public class JwtService {
 		Map<String, Object> claims = new HashMap<>();
 		claims.put("role", user.getRoles());
 		    return Jwts.builder()
-		            .setSubject(user.getEmail())
 		            .setClaims(claims)
+		            .setSubject(user.getEmail())
 		            .setIssuedAt(new Date(System.currentTimeMillis()))
 		            .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7))
 		            .signWith(getSignInKey(), SignatureAlgorithm.HS256)

@@ -50,4 +50,8 @@ public class UserService {
 		user.setStatus(user.getStatus().equals(Status.ACTIVE) ? Status.INACTIVE : Status.INACTIVE);
 		return userRepository.save(user);
 	}
+	
+	public void deleteUser(Long id) {
+		userRepository.deleteById(id);
+	}
 }
