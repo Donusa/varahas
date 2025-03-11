@@ -88,9 +88,12 @@ public class JwtService {
 	}
 
 	public String generateRefreshToken(User user) {
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("role", user.getRoles());
+		claims.put("tenant", user.getTenant());
 		    return Jwts.builder()
 		            .setSubject(user.getEmail())
-		            .setClaims(Map.of("role", user.getRoles()))
+		            .setClaims(claims)
 		            .setIssuedAt(new Date(System.currentTimeMillis()))
 		            .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7))
 		            .signWith(getSignInKey(), SignatureAlgorithm.HS256)
