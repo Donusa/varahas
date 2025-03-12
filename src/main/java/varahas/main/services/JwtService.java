@@ -60,7 +60,7 @@ public class JwtService {
 		Map<String, Object> claims = new HashMap<>();
 	    if (userDetails instanceof User) {
 	        claims.put("role", ((User) userDetails).getRoles());
-			claims.put("tenant", ((User) userDetails).getTenant());
+			//claims.put("tenant", ((User) userDetails).getTenant());
 	    }
 		return generateToken(claims, userDetails);
 	}
