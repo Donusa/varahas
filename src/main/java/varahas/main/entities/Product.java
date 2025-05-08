@@ -25,9 +25,10 @@ public class Product {
 	private String description;
 	private BigDecimal price;
 	private Integer stock;
-	private Integer mercadoLibreId;
+	private String mercadoLibreId;
 	private byte isOnMercadoLibre;
 	private byte isOnTiendaNube;
 	private String tennantName;
+	private MeliItem meliItem;
 	
 }
