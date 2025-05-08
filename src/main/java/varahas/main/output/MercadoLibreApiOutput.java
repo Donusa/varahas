@@ -152,7 +152,7 @@ public class MercadoLibreApiOutput {
 	    public Integer syncStockWithMercadoLibre(Long productId, Long stockId) {
 	        Product product = productService.getProduct(productId);
 	        
-	        if (!product.isOnMercadoLibre() || product.getMercadoLibreId() == null || product.getMercadoLibreId().isEmpty()) {
+	        if (product.getIsOnMercadoLibre()==0 || product.getMercadoLibreId() == null || product.getMercadoLibreId().isEmpty()) {
 	            throw new RuntimeException("Product does not have a Mercado Libre ID");
 	        }
 	        

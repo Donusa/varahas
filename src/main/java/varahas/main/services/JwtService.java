@@ -60,7 +60,7 @@ public class JwtService {
 		Map<String, Object> claims = new HashMap<>();
 	    if (userDetails instanceof User) {
 	        claims.put("role", ((User) userDetails).getRoles());
-			claims.put("tenant", ((User) userDetails).getTenant());
+			//claims.put("tenant", ((User) userDetails).getTenant());
 	    }
 		return generateToken(claims, userDetails);
 	}
@@ -91,7 +91,6 @@ public class JwtService {
 	public String generateRefreshToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
 		claims.put("role", user.getRoles());
-		claims.put("tenant", user.getTenant());
 		    return Jwts.builder()
 		            .setClaims(claims)
 		            .setSubject(user.getEmail())

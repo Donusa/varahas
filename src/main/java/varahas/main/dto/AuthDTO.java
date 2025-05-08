@@ -17,4 +17,6 @@ public class AuthDTO {
 	private String accessToken;
 	@JsonProperty("refresh_token")
 	private String refreshToken;
+	@JsonProperty("tenant")
+	private String tenant;
 }

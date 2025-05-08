@@ -21,8 +21,8 @@ public class ProductDTO {
 	private BigDecimal price;
 	private Integer stock;
 	private String mercadoLibreId;
-	private boolean isOnMercadoLibre;
-	private boolean isOnTiendaNube;
+	private byte isOnMercadoLibre;
+	private byte isOnTiendaNube;
 	
 	public static List<ProductDTO> fromList(List<Product> prods) {
 		return prods.stream().map(ProductDTO::from).toList();
@@ -36,8 +36,8 @@ public class ProductDTO {
                 .price(prod.getPrice())
                 .stock(prod.getStock())
                 .mercadoLibreId(prod.getMercadoLibreId())
-                .isOnMercadoLibre(prod.isOnMercadoLibre())
-                .isOnTiendaNube(prod.isOnTiendaNube())
+                .isOnMercadoLibre(prod.getIsOnMercadoLibre())
+                .isOnTiendaNube(prod.getIsOnTiendaNube())
                 .build();
 	}
 }

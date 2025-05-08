@@ -3,6 +3,8 @@ package varahas.main.entities;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -33,6 +35,7 @@ public class Tenant {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	@OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonIgnore
     private List<User> users;
 	@Override
 	public String toString() {

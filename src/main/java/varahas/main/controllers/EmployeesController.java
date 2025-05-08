@@ -18,7 +18,7 @@ public class EmployeesController {
 	
 	@GetMapping("/all")
 	public ResponseEntity<?> getAllEmployees() {
-		return ResponseEntity.ok(userService.getAllUsers().toString());
+		return ResponseEntity.ok(userService.getAllUsers());
 	}
 	
 	@DeleteMapping("/delete")

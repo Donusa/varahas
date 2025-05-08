@@ -44,8 +44,8 @@ public class ProductController {
 		}
 		Product prod = Product.builder().id(product.getId()).name(product.getName())
 				.description(product.getDescription()).price(product.getPrice()).stock(product.getStock())
-				.mercadoLibreId(product.getMercadoLibreId()).isOnMercadoLibre(product.isOnMercadoLibre())
-				.isOnTiendaNube(product.isOnTiendaNube()).tennantName(tennantName).build();
+				.mercadoLibreId(product.getMercadoLibreId()).isOnMercadoLibre(product.getIsOnMercadoLibre())
+				.isOnTiendaNube(product.getIsOnTiendaNube()).tennantName(tennantName).build();
 			productService.saveProduct(prod);
 			return ResponseEntity.ok("Product saved");
 	}
