@@ -20,7 +20,7 @@ public class ProductDTO {
 	private String description;
 	private BigDecimal price;
 	private Integer stock;
-	private Integer mercadoLibreId;
+	private String mercadoLibreId;
 	private boolean isOnMercadoLibre;
 	private boolean isOnTiendaNube;
 	

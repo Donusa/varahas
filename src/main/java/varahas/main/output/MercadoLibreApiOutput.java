@@ -1,0 +1,209 @@
+package varahas.main.output;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+
+import varahas.main.dto.MeliItemDto;
+import varahas.main.dto.MlItemResponse;
+import varahas.main.dto.MlTokenResponse;
+import varahas.main.dto.MlUserItemsResponse;
+import varahas.main.entities.Product;
+import varahas.main.services.ProductService;
+
+
+@Service
+public class MercadoLibreApiOutput {
+	
+	 @Value("${mercadolibre.client.id:}")
+	    private String clientId;
+	    
+	    @Value("${mercadolibre.client.secret:}")
+	    private String clientSecret;
+	    
+	    private String refreshToken;
+	    private String accessToken;
+	    
+	    private final RestTemplate restTemplate;
+	    
+	    @Autowired
+	    private ProductService productService;
+	    
+	    public MercadoLibreApiOutput() {
+	        this.restTemplate = new RestTemplate();
+	    }
+	    
+	    public void setAccessToken(String accessToken) {
+	        this.accessToken = accessToken;
+	    }
+
+	    public String getAccessTokenValue() {
+	        return this.accessToken;
+	    }
+
+	    public void setRefreshToken(String refreshToken) {
+	        this.refreshToken = refreshToken;
+	    }
+	    
+	    public String getRefreshToken() {
+	        return this.refreshToken;
+	    }
+	    
+	    public MlTokenResponse getAccessToken() {
+	        String url = "https://api.mercadolibre.com/oauth/token";
+	        
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+	        
+	        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+	        map.add("grant_type", "refresh_token");
+	        map.add("client_id", clientId);
+	        map.add("client_secret", clientSecret);
+	        map.add("refresh_token", refreshToken);
+	        
+	        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
+	        
+	        ResponseEntity<MlTokenResponse> response = restTemplate.postForEntity(url, request, MlTokenResponse.class);
+	        
+	        MlTokenResponse tokenResponse = response.getBody();
+	        if (tokenResponse != null) {
+	            this.accessToken = tokenResponse.access_token;
+	            this.refreshToken = tokenResponse.refresh_token;
+	        }
+	        
+	        return tokenResponse;
+	    }
+	    
+	    public Object tradeAccessToken(String code) {
+	        String url = "https://api.mercadolibre.com/oauth/token";
+	        
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+	        
+	        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+	        map.add("grant_type", "authorization_code");
+	        map.add("client_id", clientId);
+	        map.add("client_secret", clientSecret);
+	        map.add("code", code);
+	        map.add("redirect_uri", 
+	        "https://mhtd3vcn-4200.brs.devtunnels.ms/dashboard/mercado-libre");
+	        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
+	        
+	        ResponseEntity<MlTokenResponse> response = restTemplate.postForEntity(url, request, MlTokenResponse.class);
+	        
+	        MlTokenResponse tokenResponse = response.getBody();
+	        if (tokenResponse != null) {
+	            this.accessToken = tokenResponse.access_token;
+	            this.refreshToken = tokenResponse.refresh_token;
+	        }
+
+	        return response.getBody();
+	    }
+	    
+	    public List<String> getAllItemsForUser(String userId) {
+	        String url = "https://api.mercadolibre.com/users/" + userId + "/items/search";
+	        
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_JSON);
+	        headers.setBearerAuth(this.accessToken);
+	        
+	        HttpEntity<String> entity = new HttpEntity<>(headers);
+	        
+	        ResponseEntity<MlUserItemsResponse> response = restTemplate.exchange(
+	            url, 
+	            HttpMethod.GET, 
+	            entity, 
+	            MlUserItemsResponse.class
+	        );
+	        
+	        MlUserItemsResponse itemsResponse = response.getBody();
+	        return itemsResponse != null ? itemsResponse.getResults() : null;
+	    }
+	    
+	    public MeliItemDto getItemData(String itemId) {
+	        String url = "https://api.mercadolibre.com/items/" + itemId;
+	        
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_JSON);
+	        headers.setBearerAuth(this.accessToken);
+	        
+	        HttpEntity<String> entity = new HttpEntity<>(headers);
+	        
+	        ResponseEntity<MeliItemDto> response = restTemplate.exchange(
+	            url, 
+	            HttpMethod.GET, 
+	            entity, 
+	            MeliItemDto.class
+	        );
+	        
+	        return response.getBody();
+	    }
+	    
+	    public Integer syncStockWithMercadoLibre(Long productId, Long stockId) {
+	        Product product = productService.getProduct(productId);
+	        
+	        if (!product.isOnMercadoLibre() || product.getMercadoLibreId() == null || product.getMercadoLibreId().isEmpty()) {
+	            throw new RuntimeException("Product does not have a Mercado Libre ID");
+	        }
+	        
+	        Integer localMlStock = product.getMeliItem().getAvailableQuantity();
+	        
+	        Integer currentMlStock = getAvailableQuantity(product.getMercadoLibreId());
+	        
+	        if (currentMlStock == null) {
+	            throw new RuntimeException("Failed to retrieve stock from Mercado Libre");
+	        }
+	        
+	        Integer salesOnMl = localMlStock - currentMlStock;
+	        
+	        if (salesOnMl > 0) {
+	            Integer updatedStock = product.getStock() - salesOnMl;
+	            
+	            if (updatedStock < 0) {
+	                updatedStock = 0;
+	            }
+	            
+	            product.setStock(updatedStock);
+	            
+	            product.getMeliItem().setAvailableQuantity(currentMlStock);
+	            
+	            productService.saveProduct(product);
+	        }
+	        
+	        return salesOnMl > 0 ? salesOnMl : 0;
+	    }
+	    
+	    public Integer getAvailableQuantity(String meliId) {
+	        MlItemResponse item = getCurrentMELIStock(meliId);
+	        return item != null ? item.getAvailable_quantity() : null;
+	    }
+	    
+	    public MlItemResponse getCurrentMELIStock(String meliId) {
+	        String url = "https://api.mercadolibre.com/items/" + meliId;
+	        
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_JSON);
+	        headers.setBearerAuth(this.accessToken);
+	        
+	        HttpEntity<String> entity = new HttpEntity<>(headers);
+	        
+	        ResponseEntity<MlItemResponse> response = restTemplate.exchange(
+	            url, 
+	            HttpMethod.GET, 
+	            entity, 
+	            MlItemResponse.class
+	        );
+	        
+	        return response.getBody();
+	    }
+}
