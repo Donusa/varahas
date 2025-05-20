@@ -11,5 +11,6 @@ import varahas.main.entities.Tenant;
 public interface TenantRepository extends JpaRepository<Tenant, Long> {
     
     Optional<Tenant> findByName(String name);
+    Optional<Tenant> findById(Long id);
 
 }

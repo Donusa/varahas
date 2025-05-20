@@ -1,5 +1,8 @@
 package varahas.main.dto;
 
+import lombok.Data;
+
+@Data
 public class MlTokenResponse {
     
     public String access_token;

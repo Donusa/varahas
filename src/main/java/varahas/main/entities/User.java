@@ -3,11 +3,15 @@ package varahas.main.entities;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,6 +21,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -56,6 +61,9 @@ public class User implements UserDetails {
 	private String resetToken;
 	@Column(name = "reset_token_expiry")
 	private LocalDateTime resetTokenExpiry;
+	@OneToMany(mappedBy = "user",cascade = CascadeType.REMOVE)
+	@JsonIgnore
+	private List<Token> tokens;
 
 
 	@Override

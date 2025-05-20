@@ -1,0 +1,37 @@
+package varahas.main.dto;
+
+import java.util.List;
+
+import lombok.Data;
+
+@Data
+public class MlProductRequest {
+	private String title;
+	private String category_id;
+	private Double price;
+	private String currency_id;
+	private Integer available_quantity;
+	private String buying_mode;
+	private String condition;
+	private String listing_type_id;
+	private List<SaleTerm> sale_term;
+	private List<Picture> pictures;
+	private List<Attribute> attributes;
+
+	@Data
+	public static class SaleTerm {
+		private String id;
+		private String value_name;
+	}
+
+	@Data
+	public static class Picture{
+		private String source;
+	}
+	
+	@Data
+	public static class Attribute{
+		private String id;
+		private String value_name;
+	}
+}

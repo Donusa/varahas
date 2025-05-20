@@ -6,11 +6,13 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import varahas.main.dto.Shipping;
 
 @Data
 @Entity
@@ -18,7 +20,8 @@ import varahas.main.dto.Shipping;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MeliItem {
-
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private String id;
     @JsonProperty("site_id")
     private String siteId;
@@ -49,7 +52,7 @@ public class MeliItem {
     private String condition;
     private String permalink;
     private String thumbnail;
-    private Shipping shipping;
+    private ShippingEntity shipping;
     private String status;
     @JsonProperty("sub_status")
     private List<String> subStatus;
