@@ -4,23 +4,20 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embeddable;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import lombok.Data;
 
-@Entity
+@Embeddable
 @Data
 public class ShippingEntity {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private String id;
+
 	private String mode;
-	@OneToMany(mappedBy = "shipping", cascade = CascadeType.ALL,orphanRemoval = true)
-	private List<Tag> tags;
+	@ElementCollection
+	private List<String> tags;
 	@JsonProperty("free_shipping")
 	private Boolean freeShipping;
 	@JsonProperty("logistic_type")
