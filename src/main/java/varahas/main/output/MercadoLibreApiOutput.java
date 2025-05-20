@@ -154,7 +154,6 @@ public class MercadoLibreApiOutput {
 		}
 
 		Integer localMlStock = product.getMeliItem().getAvailableQuantity();
-
 		Integer currentMlStock = getAvailableQuantity(product.getMercadoLibreId(), tenantId);
 
 		if (currentMlStock == null) {

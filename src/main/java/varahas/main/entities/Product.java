@@ -2,10 +2,13 @@ package varahas.main.entities;
 
 import java.math.BigDecimal;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,6 +32,8 @@ public class Product {
 	private byte isOnMercadoLibre;
 	private byte isOnTiendaNube;
 	private String tennantName;
+	@OneToOne(cascade = CascadeType.ALL)
+	@JoinColumn(name = "meli_item_id")
 	private MeliItem meliItem;
 	
 }

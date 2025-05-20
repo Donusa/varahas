@@ -14,7 +14,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>{
 
 	Optional<Product> findById(@NonNull Long id);
 	Optional<Product> findByName(@NonNull String name);
-	Optional<Product> findByMercadoLibreId(@NonNull Integer mercadoLibreId);
+	Optional<Product> findByMercadoLibreId(@NonNull String mercadoLibreId);
 	@NonNull
 	List<Product> findAll();
 	Optional<List<Product>> findAllByTennantName(@NonNull String tennantName);

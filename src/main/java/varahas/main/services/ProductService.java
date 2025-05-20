@@ -29,7 +29,7 @@ public class ProductService {
 				() -> new IllegalArgumentException("Product not found"));
 	}
 	
-	public Product getProductByMercadoLibreId(Integer mercadoLibreId) {
+	public Product getProductByMercadoLibreId(String mercadoLibreId) {
 		return productRepository.findByMercadoLibreId(mercadoLibreId).orElseThrow(
 				() -> new IllegalArgumentException("Product not found"));
 	}
