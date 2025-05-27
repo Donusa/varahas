@@ -5,6 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -36,6 +37,7 @@ public class MeliItem {
 	private Integer availableQuantity;
 	@JsonProperty("buying_mode")
     private String buyingMode;
+	@Column(name = "`condition`")
 	private String condition;
 	@JsonProperty("listing_type_id")
 	private String listingTypeId;
