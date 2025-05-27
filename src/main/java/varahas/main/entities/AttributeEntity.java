@@ -18,7 +18,7 @@ public class AttributeEntity {
     @JsonProperty("value_name")
     private String valueName;
     @ManyToOne
-    @JoinColumn(name = "meliItem_id",nullable = false)
+    @JoinColumn(name = "meli_item_id",nullable = false)
     private MeliItem meliItem;
     
 }

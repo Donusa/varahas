@@ -16,7 +16,7 @@ public class PictureEntity {
 	private Long id;
     private String source;
     @ManyToOne
-    @JoinColumn(name = "meliItem_id",nullable = false)
+    @JoinColumn(name = "meli_item_id",nullable = false)
     private MeliItem meliItem;
     
 }

@@ -29,7 +29,11 @@ public class TenantAccessTokenService {
 	public TenantAccessToken saveNew(Long tenantId){
 		return tenantAcessTokenRepository.save(TenantAccessToken
 				.builder()
-				.tenant(tenantService.getTenantById(tenantId)).build());
+				.tenant(tenantService.getTenantById(tenantId))
+				.accessToken("")
+				.refreshToken("")
+				.expirationDate(LocalDateTime.now().plusHours(6))
+				.build());
 	}
 	
 	public TenantAccessToken save(TenantAccessToken tenantAcessToken){

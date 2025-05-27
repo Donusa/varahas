@@ -51,7 +51,7 @@ public class AuthenticationService {
 		Roles role = switch (request.getRole()) {
 		case "ROLE_USER" -> Roles.ROLE_USER;
 		case "ROLE_ADMIN" -> Roles.ROLE_ADMIN;
-		case "ROLE_DELIVERY" -> Roles.ROLE_USER;
+		case "ROLE_SUPER" -> Roles.ROLE_SUPER;
 		default -> throw new IllegalArgumentException("Invalid role: " + request.getRole());
 		};
 		Tenant tenant = tenantRepository.findByName(request.getTenantName())

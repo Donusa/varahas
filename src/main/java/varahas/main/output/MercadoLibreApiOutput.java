@@ -27,10 +27,10 @@ import varahas.main.services.TenantAccessTokenService;
 @Service
 public class MercadoLibreApiOutput {
 
-	@Value("${mercadolibre.client.id:}")
+	@Value("${mercadolibre.client.id:3670283929615433}")
 	private String clientId;
 
-	@Value("${mercadolibre.client.secret:}")
+	@Value("${mercadolibre.client.secret:gEVsQhSNYzDRXLpLASEK8Iwy56LM8hvo}")
 	private String clientSecret;
 
 	private final RestTemplate restTemplate;
@@ -68,16 +68,26 @@ public class MercadoLibreApiOutput {
 
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
-		ResponseEntity<MlTokenResponse> response = restTemplate.postForEntity(url, request, MlTokenResponse.class);
+		try {
+			ResponseEntity<MlTokenResponse> response = restTemplate.postForEntity(url, request, MlTokenResponse.class);
 
-		MlTokenResponse tokenResponse = response.getBody();
-		if (tokenResponse != null) {
-			accessToken.setAccessToken(tokenResponse.access_token);
-			accessToken.setRefreshToken(tokenResponse.refresh_token);
-			tenantAccessService.save(accessToken);
+			MlTokenResponse tokenResponse = response.getBody();
+			if (tokenResponse != null) {
+				accessToken.setAccessToken(tokenResponse.access_token);
+				accessToken.setRefreshToken(tokenResponse.refresh_token);
+				tenantAccessService.save(accessToken);
+				return tokenResponse;
+			} else {
+				System.out.println("Error: Token response is null");
+				return new MlTokenResponse();
+			}
+		} catch (Exception e) {
+			System.out.println("Error al obtener refresh token de Mercado Libre: " + e.getMessage());
+			MlTokenResponse errorResponse = new MlTokenResponse();
+			errorResponse.access_token = "";
+			errorResponse.refresh_token = "";
+			return errorResponse;
 		}
-
-		return tokenResponse;
 	}
 
 	public Object tradeAccessToken(String code, Long tenantId) {
@@ -85,6 +95,7 @@ public class MercadoLibreApiOutput {
 		try {
 		accessToken = tenantAccessService.getAccessTokenByTenantId(tenantId);
 		}catch(Exception e){
+			System.out.println("MercadoLibreOutput.tradeAcessToken 88");
 			accessToken = tenantAccessService.saveNew(tenantId);
 		}
 		String url = "https://api.mercadolibre.com/oauth/token";
@@ -97,19 +108,29 @@ public class MercadoLibreApiOutput {
 		map.add("client_id", clientId);
 		map.add("client_secret", clientSecret);
 		map.add("code", code);
-		map.add("redirect_uri", "https://mhtd3vcn-4200.brs.devtunnels.ms/dashboard/mercado-libre");
+		map.add("redirect_uri", "https://benedicto17.com.ar/");
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
-		ResponseEntity<MlTokenResponse> response = restTemplate.postForEntity(url, request, MlTokenResponse.class);
+		try {
+			ResponseEntity<MlTokenResponse> response = restTemplate.postForEntity(url, request, MlTokenResponse.class);
 
-		MlTokenResponse tokenResponse = response.getBody();
-		if (tokenResponse != null) {
-			accessToken.setAccessToken(tokenResponse.access_token);
-			accessToken.setRefreshToken(tokenResponse.refresh_token);
-			tenantAccessService.save(accessToken);
+			MlTokenResponse tokenResponse = response.getBody();
+			if (tokenResponse != null) {
+				accessToken.setAccessToken(tokenResponse.access_token);
+				accessToken.setRefreshToken(tokenResponse.refresh_token);
+				tenantAccessService.save(accessToken);
+				return tokenResponse;
+			} else {
+				System.out.println("Error: Token response is null");
+				return new MlTokenResponse();
+			}
+		} catch (Exception e) {
+			System.out.println("Error al obtener token de Mercado Libre: " + e.getMessage());
+			MlTokenResponse errorResponse = new MlTokenResponse();
+			errorResponse.access_token = "";
+			errorResponse.refresh_token = "";
+			return errorResponse;
 		}
-		
-		return response.getBody();
 	}
 
 	public List<String> getAllItemsForUser(String userId, Long tenantId) {
@@ -201,11 +222,14 @@ public class MercadoLibreApiOutput {
 	}
 	
 	public MeliItemDto postProduct(MlProductRequest request,Long tenantId) {
+		System.out.println("MercadoLibreApiOutput.postProduct 225");
 		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantId(tenantId);
+		System.out.println("Aca el tenant:"+ accessToken);
 		String url = "https://api.mercadolibre.com/items";
 		HttpHeaders headers = new HttpHeaders();
-		headers.set("Authorization", "Bearer"+accessToken.getAccessToken());
+		headers.set("Authorization", "Bearer "+accessToken.getAccessToken());
 		HttpEntity<MlProductRequest> entity = new HttpEntity<>(request,headers);
+		System.out.println("Request:"+request);
 		ResponseEntity<MeliItemDto> response = restTemplate.exchange(url, HttpMethod.POST,entity,MeliItemDto.class);
 		
 		return response.getBody();

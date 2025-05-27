@@ -14,12 +14,12 @@ public class MlProductRequest {
 	private String buying_mode;
 	private String condition;
 	private String listing_type_id;
-	private List<SaleTerm> sale_term;
+	private List<SaleTerms> sale_terms;
 	private List<Picture> pictures;
 	private List<Attribute> attributes;
 
 	@Data
-	public static class SaleTerm {
+	public static class SaleTerms {
 		private String id;
 		private String value_name;
 	}

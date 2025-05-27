@@ -5,12 +5,12 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "meli_item")
 public class MeliItem {
 
 	@Id
@@ -35,14 +36,13 @@ public class MeliItem {
 	private Integer availableQuantity;
 	@JsonProperty("buying_mode")
     private String buyingMode;
-    @Column(name = "`condition`")
 	private String condition;
-    @JsonProperty("listing_type_id")
+	@JsonProperty("listing_type_id")
 	private String listingTypeId;
-	@OneToMany(mappedBy = "meliItem", cascade = CascadeType.ALL,orphanRemoval = true)
+	@OneToMany(mappedBy = "meliItem", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<SaleTermsEntity> saleTerms;
-	@OneToMany(mappedBy = "meliItem", cascade = CascadeType.ALL,orphanRemoval = true)
+	@OneToMany(mappedBy = "meliItem", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<PictureEntity> pictures;
-	@OneToMany(mappedBy = "meliItem", cascade = CascadeType.ALL,orphanRemoval = true)
+	@OneToMany(mappedBy = "meliItem", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<AttributeEntity> attributes;
 }
