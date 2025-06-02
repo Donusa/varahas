@@ -19,7 +19,7 @@ import varahas.main.dto.MlTokenResponse;
 import varahas.main.output.MercadoLibreApiOutput;
 
 @RestController
-@RequestMapping("api/ml")
+@RequestMapping("/api/ml")
 public class MlController {
 
 	@Autowired
@@ -28,18 +28,19 @@ public class MlController {
 	@GetMapping("/trade-access-token")
 	public ResponseEntity<?>tradeAcessToken(@RequestParam String code, @RequestParam Long tenantId){
 		MlTokenResponse response = (MlTokenResponse) mercadoLibreApiOutput.tradeAccessToken(code,tenantId);
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok((response!= null)?"Token de acceso intercambiado correctamente"
+				: "El token de acceso no pudo ser intercambiado");
 	}
 	
-	@GetMapping("/get-refresh-token")
-	public ResponseEntity<?>getRefreshToken(@RequestParam Long tenantId){
+	@GetMapping("/validate")
+	public ResponseEntity<?>validateConnection(@RequestParam Long tenantId){
 		MlTokenResponse response = mercadoLibreApiOutput.getAccessToken(tenantId);
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(response != null);
 	}
 	
 	@GetMapping("/items")
-	public ResponseEntity<?>getMlItems(@RequestParam String userId, @RequestParam Long tenantId){
-		List<String> items = mercadoLibreApiOutput.getAllItemsForUser(userId, tenantId);
+	public ResponseEntity<?>getItems(@RequestParam Long tenantId){
+		List<String> items = mercadoLibreApiOutput.getAllItemsForUser(tenantId);
 		return ResponseEntity.ok(items);
 	}
 	

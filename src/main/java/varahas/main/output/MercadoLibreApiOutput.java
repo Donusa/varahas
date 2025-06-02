@@ -20,9 +20,11 @@ import varahas.main.dto.MlProductRequest;
 import varahas.main.dto.MlTokenResponse;
 import varahas.main.dto.MlUserItemsResponse;
 import varahas.main.entities.Product;
+import varahas.main.entities.Tenant;
 import varahas.main.entities.TenantAccessToken;
 import varahas.main.services.ProductService;
 import varahas.main.services.TenantAccessTokenService;
+import varahas.main.services.TenantService;
 
 @Service
 public class MercadoLibreApiOutput {
@@ -40,6 +42,9 @@ public class MercadoLibreApiOutput {
 
 	@Autowired
 	private TenantAccessTokenService tenantAccessService;
+	
+	@Autowired
+	private TenantService tenantService;
 
 	public MercadoLibreApiOutput() {
 		this.restTemplate = new RestTemplate();
@@ -83,10 +88,7 @@ public class MercadoLibreApiOutput {
 			}
 		} catch (Exception e) {
 			System.out.println("Error al obtener refresh token de Mercado Libre: " + e.getMessage());
-			MlTokenResponse errorResponse = new MlTokenResponse();
-			errorResponse.access_token = "";
-			errorResponse.refresh_token = "";
-			return errorResponse;
+			return null;
 		}
 	}
 
@@ -95,7 +97,6 @@ public class MercadoLibreApiOutput {
 		try {
 		accessToken = tenantAccessService.getAccessTokenByTenantId(tenantId);
 		}catch(Exception e){
-			System.out.println("MercadoLibreOutput.tradeAcessToken 88");
 			accessToken = tenantAccessService.saveNew(tenantId);
 		}
 		String url = "https://api.mercadolibre.com/oauth/token";
@@ -116,8 +117,11 @@ public class MercadoLibreApiOutput {
 
 			MlTokenResponse tokenResponse = response.getBody();
 			if (tokenResponse != null) {
+				Tenant tenant = tenantService.getTenantById(tenantId);
 				accessToken.setAccessToken(tokenResponse.access_token);
 				accessToken.setRefreshToken(tokenResponse.refresh_token);
+				tenant.setMlUserId(tokenResponse.user_id);
+				tenantService.save(tenant);
 				tenantAccessService.save(accessToken);
 				return tokenResponse;
 			} else {
@@ -133,10 +137,10 @@ public class MercadoLibreApiOutput {
 		}
 	}
 
-	public List<String> getAllItemsForUser(String userId, Long tenantId) {
-		
+	public List<String> getAllItemsForUser(Long tenantId) {
+		Tenant tenant = tenantService.getTenantById(tenantId);
 		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantId(tenantId);
-		String url = "https://api.mercadolibre.com/users/" + userId + "/items/search";
+		String url = "https://api.mercadolibre.com/users/" + tenant.getMlUserId() + "/items/search";
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);

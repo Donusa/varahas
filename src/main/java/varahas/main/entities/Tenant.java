@@ -37,6 +37,8 @@ public class Tenant {
 	@OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonIgnore
     private List<User> users;
+	@Column(unique = true, nullable = true)
+	private String mlUserId;
 	@Override
 	public String toString() {
 		return "";
