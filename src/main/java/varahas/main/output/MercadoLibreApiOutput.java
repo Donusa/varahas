@@ -119,7 +119,7 @@ public class MercadoLibreApiOutput {
 		map.add("client_id", clientId);
 		map.add("client_secret", clientSecret);
 		map.add("code", code);
-		map.add("redirect_uri", "https://benedicto17.com.ar/");
+		map.add("redirect_uri", "https://8v2rt2d8-4200.brs.devtunnels.ms/stock");
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
 		try {
