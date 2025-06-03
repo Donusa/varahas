@@ -12,13 +12,18 @@ import varahas.main.repositories.TenantAccessTokenRepository;
 public class TenantAccessTokenService {
 
 	@Autowired
-	private TenantAccessTokenRepository tenantAcessTokenRepository;
+	private TenantAccessTokenRepository tenantAccessTokenRepository;
 	@Autowired
 	private TenantService tenantService;
 	
 	public TenantAccessToken getAccessTokenByTenantId(Long tenantId) {
-		return tenantAcessTokenRepository.findByTenantId(tenantId).orElseThrow(
+		return tenantAccessTokenRepository.findByTenantId(tenantId).orElseThrow(
 				()-> new RuntimeException("TenantId not found"));
+	}
+	
+	public TenantAccessToken getAccessTokenByTenantName(String tenantName){
+		return tenantAccessTokenRepository.findByTenantName(tenantName).orElseThrow(
+				()-> new RuntimeException("Tenant Name not found"));
 	}
 	
 	public boolean isRefreshTokenExpired(Long tenantId) {
@@ -26,10 +31,10 @@ public class TenantAccessTokenService {
 		return accessToken.getExpirationDate().isBefore(LocalDateTime.now());
 	}
 	
-	public TenantAccessToken saveNew(Long tenantId){
-		return tenantAcessTokenRepository.save(TenantAccessToken
+	public TenantAccessToken saveNew(String tenantName){
+		return tenantAccessTokenRepository.save(TenantAccessToken
 				.builder()
-				.tenant(tenantService.getTenantById(tenantId))
+				.tenant(tenantService.getTenantByName(tenantName))
 				.accessToken("")
 				.refreshToken("")
 				.expirationDate(LocalDateTime.now().plusHours(6))
@@ -37,6 +42,6 @@ public class TenantAccessTokenService {
 	}
 	
 	public TenantAccessToken save(TenantAccessToken tenantAcessToken){
-		return tenantAcessTokenRepository.save(tenantAcessToken);
+		return tenantAccessTokenRepository.save(tenantAcessToken);
 	}
 }

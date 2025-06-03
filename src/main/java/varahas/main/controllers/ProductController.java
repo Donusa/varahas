@@ -27,7 +27,6 @@ public class ProductController {
 
 	@GetMapping("/all")
 	public ResponseEntity<?> getProducts(@RequestParam String tennantName) {
-		System.out.println("ProductController.getProducts");
 		var authorized = authorization.isUserAuthorized(tennantName);
 		if (!authorized) {
 			return ResponseEntity.badRequest().body("User not authorized to access tennant");

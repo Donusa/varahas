@@ -25,40 +25,40 @@ public class MlController {
 	@Autowired
 	private MercadoLibreApiOutput mercadoLibreApiOutput;
 	
+	
 	@GetMapping("/trade-access-token")
-	public ResponseEntity<?>tradeAcessToken(@RequestParam String code, @RequestParam Long tenantId){
-		MlTokenResponse response = (MlTokenResponse) mercadoLibreApiOutput.tradeAccessToken(code,tenantId);
+	public ResponseEntity<?>tradeAcessToken(@RequestParam String code, @RequestParam String tenantName){
+		MlTokenResponse response = (MlTokenResponse) mercadoLibreApiOutput.tradeAccessToken(code,tenantName);
 		return ResponseEntity.ok((response!= null)?"Token de acceso intercambiado correctamente"
 				: "El token de acceso no pudo ser intercambiado");
 	}
 	
 	@GetMapping("/validate")
-	public ResponseEntity<?>validateConnection(@RequestParam Long tenantId){
-		MlTokenResponse response = mercadoLibreApiOutput.getAccessToken(tenantId);
-		return ResponseEntity.ok(response != null);
+	public Boolean validateConnection(@RequestParam String tenantName){
+		return(mercadoLibreApiOutput.validateAcessToken(tenantName));
 	}
 	
 	@GetMapping("/items")
-	public ResponseEntity<?>getItems(@RequestParam Long tenantId){
-		List<String> items = mercadoLibreApiOutput.getAllItemsForUser(tenantId);
+	public ResponseEntity<?>getItems(@RequestParam String tenantName){
+		List<String> items = mercadoLibreApiOutput.getAllItemsForUser(tenantName);
 		return ResponseEntity.ok(items);
 	}
 	
 	@GetMapping("/items/{itemId}")
-	public ResponseEntity<?>getItemInfo(@PathVariable String itemId, @RequestParam Long tenantId){
-		MeliItemDto item = mercadoLibreApiOutput.getItemData(itemId, tenantId);
+	public ResponseEntity<?>getItemInfo(@PathVariable String itemId, @RequestParam String tenantName){
+		MeliItemDto item = mercadoLibreApiOutput.getItemData(itemId, tenantName);
 		return ResponseEntity.ok(item);
 	}
 	
 	@GetMapping("/stock/{meliId}")
-	public ResponseEntity<?>getCurrentMELIStock(@PathVariable String meliId, @RequestParam Long tenantId){
-		MlItemResponse response = mercadoLibreApiOutput.getCurrentMELIStock(meliId, tenantId);
+	public ResponseEntity<?>getCurrentMELIStock(@PathVariable String meliId, @RequestParam String tenantName){
+		MlItemResponse response = mercadoLibreApiOutput.getCurrentMELIStock(meliId, tenantName);
 		return ResponseEntity.ok(response);
 	} 
 	
 	@PostMapping("/items")
-	public ResponseEntity<?>postProduct(@RequestBody MlProductRequest request, @RequestParam Long tenantId){
-		MeliItemDto item = mercadoLibreApiOutput.postProduct(request, tenantId);
+	public ResponseEntity<?>postProduct(@RequestBody MlProductRequest request, @RequestParam String tenantName){
+		MeliItemDto item = mercadoLibreApiOutput.postProduct(request, tenantName);
 		return ResponseEntity.ok(item);
 	}
 }

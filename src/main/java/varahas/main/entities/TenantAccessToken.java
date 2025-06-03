@@ -34,7 +34,8 @@ public class TenantAccessToken {
 	@Column(nullable = false)
 	private LocalDateTime expirationDate;
 	
+
 	@OneToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "tenant_id",nullable = false)
+	@JoinColumn(name = "tenant_name",referencedColumnName = "name",nullable = false)
 	private Tenant tenant;
 }

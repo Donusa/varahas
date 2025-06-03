@@ -17,6 +17,10 @@ public class TenantService {
 				()->new RuntimeException("Id not found"));
 	}
 	
+	public Tenant getTenantByName(String tenantName){
+		return tenantRepository.findByName(tenantName).orElseThrow(
+				()->new RuntimeException("Name not found"));
+	}
 	public Tenant save(Tenant tenant){
 		return tenantRepository.save(tenant);
 	}

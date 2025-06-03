@@ -11,5 +11,6 @@ import varahas.main.entities.TenantAccessToken;
 public interface TenantAccessTokenRepository extends JpaRepository<TenantAccessToken, Long>{
 	
 	Optional<TenantAccessToken>findByTenantId(Long tenantId);
+	Optional<TenantAccessToken>findByTenantName(String tenantName);
 	
 }
