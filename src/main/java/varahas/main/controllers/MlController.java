@@ -3,6 +3,8 @@ package varahas.main.controllers;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,8 +36,21 @@ public class MlController {
 	}
 	
 	@GetMapping("/validate")
-	public Boolean validateConnection(@RequestParam String tenantName){
-		return(mercadoLibreApiOutput.validateAcessToken(tenantName));
+	public ResponseEntity<?> validateConnection(@RequestParam String tenantName) {
+	    try {
+	        Boolean isValid = mercadoLibreApiOutput.validateAcessToken(tenantName);
+	        if (!isValid) {
+	            return ResponseEntity
+	                    .status(HttpStatus.UNAUTHORIZED)
+	                    .body("Token inválido o expirado");
+	        }
+	        return ResponseEntity.ok("Token válido encontrado");
+
+	    } catch (RuntimeException ex) {
+	        return ResponseEntity
+	                .status(HttpStatus.NOT_FOUND)
+	                .body(ex.getMessage());
+	    }
 	}
 	
 	@GetMapping("/items")
