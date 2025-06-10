@@ -119,7 +119,7 @@ public class MercadoLibreApiOutput {
 		map.add("client_id", clientId);
 		map.add("client_secret", clientSecret);
 		map.add("code", code);
-		map.add("redirect_uri", "https://8v2rt2d8-4200.brs.devtunnels.ms/stock");
+		map.add("redirect_uri", "https://benedicto17.com.ar/");
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
 		try {
@@ -180,7 +180,7 @@ public class MercadoLibreApiOutput {
 		return response.getBody();
 	}
 
-	public Integer syncStockWithMercadoLibre(Long productId, Long stockId,String tenantName) {
+	public Integer syncStockWithMercadoLibre(Long productId,String tenantName) {
 		Product product = productService.getProduct(productId);
 
 		if (product.getIsOnMercadoLibre() == 0 || product.getMercadoLibreId() == null
@@ -207,7 +207,6 @@ public class MercadoLibreApiOutput {
 			product.setStock(updatedStock);
 
 			product.getMeliItem().setAvailableQuantity(currentMlStock);
-
 			productService.saveProduct(product);
 		}
 

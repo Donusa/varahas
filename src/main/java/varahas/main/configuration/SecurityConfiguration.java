@@ -29,7 +29,12 @@ public class SecurityConfiguration {
     private LogoutHandler logoutHandler;
 	
 
-    private static final String[] WHITE_LIST = { "/api/auth/**" };
+    private static final String[] WHITE_LIST = {
+    	    "/api/auth/**",
+    	    "/swagger-ui/**",
+    	    "/v3/api-docs/**",
+    	    "/swagger-ui.html"
+    	};
 
     
 	@Bean
