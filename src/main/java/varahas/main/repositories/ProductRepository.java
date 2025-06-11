@@ -11,7 +11,8 @@ import varahas.main.entities.Product;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>{
-
+	
+	@NonNull
 	Optional<Product> findById(@NonNull Long id);
 	Optional<Product> findByName(@NonNull String name);
 	Optional<Product> findByMercadoLibreId(@NonNull String mercadoLibreId);
