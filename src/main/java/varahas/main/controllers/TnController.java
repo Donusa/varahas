@@ -72,17 +72,23 @@ public class TnController {
 	}
 	
 	@PutMapping
-	public ResponseEntity<?> updateProduct(@RequestBody TnProduct productData, @RequestParam String tenantName) {
-		if (productData == null || productData.getId() == null) {
-			return ResponseEntity.badRequest()
-					.body("Datos del producto no pueden ser nulos o el ID debe estar presente");
-		}
+	public ResponseEntity<?> updateProduct(@RequestBody TnProduct productData, @RequestParam String tenantName, @RequestParam Long id) {
+
 		var tenant = this.tenantService.getTenantByName(tenantName);
 		if (tenant == null) {
 			return ResponseEntity.badRequest().body("Tenant no encontrado");
 		}
-		var response = tiendaNubeApiOutput.updateProduct(productData, tenant);
+		var response = tiendaNubeApiOutput.updateProduct(productData, tenant, id);
 		return ResponseEntity.ok(response);
 	}
 	
+	@GetMapping("/categories")
+	public ResponseEntity<?> getCategories(@RequestParam String tenantName) {
+		var tenant = this.tenantService.getTenantByName(tenantName);
+		if (tenant == null) {
+			return ResponseEntity.badRequest().body("Tenant no encontrado");
+		}
+		var response = tiendaNubeApiOutput.getCategories(tenant);
+		return ResponseEntity.ok(response);
+	}
 }

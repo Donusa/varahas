@@ -35,5 +35,7 @@ public class Product {
 	@OneToOne(cascade = CascadeType.ALL)
 	@JoinColumn(name = "meli_item_id")
 	private MeliItem meliItem;
-	
+	@OneToOne(cascade = CascadeType.ALL)
+	@JoinColumn(name = "tn_product_id")
+	private TnProduct tnProduct;
 }

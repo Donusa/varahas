@@ -111,12 +111,8 @@ public class TiendaNubeApiOutput {
 	}
 
 
-	public Object updateProduct(TnProduct productData, Tenant tenant) {
-		if (productData == null || productData.getId() == null || tenant == null) {
-			throw new IncorrectUpdateSemanticsDataAccessException("Datos del producto o tenant no pueden ser nulos");
-		}
-
-		String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + productData.getId();
+	public Object updateProduct(TnProduct productData, Tenant tenant, Long id) {
+		String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + id;
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -127,11 +123,45 @@ public class TiendaNubeApiOutput {
 
 		try {
 			ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.PUT, requestEntity, Object.class);
+			System.out.println("Response status: " + response.getStatusCode());
+			System.out.println("Response body: " + response.getBody());
 			return response.getBody();
 
 		} catch (Exception e) {
 			throw new IncorrectUpdateSemanticsDataAccessException("Error al actualizar el producto: " + e.getMessage());
 		}
+	}
+
+
+	public Object getCategories(Tenant tenant) {
+		
+		if (tenant == null) {
+			throw new IncorrectUpdateSemanticsDataAccessException("Tenant no puede ser nulo");
+		}
+
+		String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/categories";
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
+		headers.set("User-Agent", userAgent);
+
+		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+
+		try {
+			ResponseEntity<Object[]> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity,
+					Object[].class);
+
+			if (response.getStatusCode().is2xxSuccessful()) {
+				return response.getBody();
+			} else {
+				throw new IncorrectUpdateSemanticsDataAccessException(
+						"Error al obtener las categorías: " + response.getStatusCode());
+			}
+		} catch (Exception e) {
+			throw new IncorrectUpdateSemanticsDataAccessException("Error al obtener las categorías: " + e.getMessage());
+		}
+		
 	}
 	
 }

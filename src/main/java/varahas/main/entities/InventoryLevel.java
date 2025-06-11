@@ -1,11 +1,7 @@
 package varahas.main.entities;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,27 +18,17 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Data
-public class Image {
+public class InventoryLevel {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @JsonIgnore
     private Long id;
 
-    @JsonProperty("src")
-    private String url;
-
-    private Integer position;
-    private Integer height;
-    private Integer width;
-    private Integer thumbnailsGenerated;
-
-    @ElementCollection
-    private List<String> alt;
+    private String locationId;
+    private Integer stock;
 
     @ManyToOne
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "variant_id")
     @JsonIgnore
-    private TnProduct product;
+    private Variant variant;
 }
-
