@@ -1,5 +1,6 @@
 package varahas.main.output;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.IncorrectUpdateSemanticsDataAccessException;
 import org.springframework.http.HttpEntity;
@@ -25,12 +26,8 @@ public class TiendaNubeApiOutput {
 	@Value("${varahas.tn.api.token:3754158629ec4945a94cbeca88789caf77a1dbb2}")
 	private String apiToken;
 
-	private final RestTemplate restTemplate;
-	
-	public TiendaNubeApiOutput() {
-		this.restTemplate = new RestTemplate();
-	}
-	
+	@Autowired
+	private RestTemplate restTemplate;
 
 	public String createProduct(TnProduct productData, Tenant tenant) {
 		if (productData == null || tenant == null) {

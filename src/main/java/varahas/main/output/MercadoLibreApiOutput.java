@@ -38,7 +38,8 @@ public class MercadoLibreApiOutput {
 	@Value("${mercadolibre.client.secret:gEVsQhSNYzDRXLpLASEK8Iwy56LM8hvo}")
 	private String clientSecret;
 
-	private final RestTemplate restTemplate;
+	@Autowired
+	private RestTemplate restTemplate;
 
 	@Autowired
 	private ProductService productService;
@@ -49,9 +50,6 @@ public class MercadoLibreApiOutput {
 	@Autowired
 	private TenantService tenantService;
 
-	public MercadoLibreApiOutput() {
-		this.restTemplate = new RestTemplate();
-	}
 
 	public Boolean validateAcessToken(String tenantName) {
 		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
@@ -259,7 +257,6 @@ public class MercadoLibreApiOutput {
 
 		HttpEntity<Void> request = new HttpEntity<>(headers);
 
-		RestTemplate restTemplate = new RestTemplate();
 		ResponseEntity<CategoryResponse[]> response = restTemplate.exchange(url, HttpMethod.GET, request,
 				CategoryResponse[].class);
 
@@ -275,7 +272,6 @@ public class MercadoLibreApiOutput {
 
 	    HttpEntity<Void> request = new HttpEntity<>(headers);
 
-	    RestTemplate restTemplate = new RestTemplate();
 	    ResponseEntity<AttributeResponse[]> response = restTemplate.exchange(
 	        url,
 	        HttpMethod.GET,

@@ -21,12 +21,9 @@ public class MlOrderService {
     @Autowired 
     private StockNotificationService notifier;
     
-    private final RestTemplate restTemplate;
+    @Autowired
+    private RestTemplate restTemplate;
 	
-	MlOrderService(RestTemplate restTemplate) {
-		this.restTemplate = restTemplate;
-	}
-    
 	public void handleNewOrder(Long orderId, Tenant tenant) {
 		String token = tenant.getMlAccessToken();
 	    if (token == null) throw new RuntimeException("El tenant no tiene token");
