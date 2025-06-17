@@ -71,4 +71,8 @@ public class MlController {
 		return ResponseEntity.ok(item);
 	}
 	
+	@GetMapping("/categories")
+	public ResponseEntity<?> getCategories(@RequestParam String tenantName, @RequestParam String siteId) {
+		return ResponseEntity.ok(mercadoLibreApiOutput.getCategories(siteId, tenantName));
+	}
 }
