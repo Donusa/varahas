@@ -15,6 +15,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import varahas.main.dto.AttributeResponse;
 import varahas.main.dto.CategoryResponse;
 import varahas.main.dto.MeliItemDto;
 import varahas.main.dto.MlItemResponse;
@@ -264,4 +265,25 @@ public class MercadoLibreApiOutput {
 
 		return response.getBody();
 	}
+	
+	public AttributeResponse[] getCategoryAttributes(String tenantName, String categoryId) {
+	    String url = "https://api.mercadolibre.com/categories/" + categoryId + "/attributes";
+
+		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setBearerAuth(accessToken.getAccessToken());
+
+	    HttpEntity<Void> request = new HttpEntity<>(headers);
+
+	    RestTemplate restTemplate = new RestTemplate();
+	    ResponseEntity<AttributeResponse[]> response = restTemplate.exchange(
+	        url,
+	        HttpMethod.GET,
+	        request,
+	        AttributeResponse[].class
+	    );
+
+	    return response.getBody();
+	}
+
 }
