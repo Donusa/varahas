@@ -25,4 +25,9 @@ public class TenantService {
 		return tenantRepository.save(tenant);
 	}
 
+	public Tenant findByMlUserId(String userId) {
+		return this.tenantRepository.findByMlUserId(userId)
+				.orElseThrow(() -> new RuntimeException("Tenant not found for user_id: " + userId));
+	}
+
 }

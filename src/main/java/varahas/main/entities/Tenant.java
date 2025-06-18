@@ -41,6 +41,8 @@ public class Tenant {
 	private String mlUserId;
 	@Column(unique = true, nullable = true)
 	private String TiendaNubeAccessToken;
+	@Column(nullable = true)
+	private String mlAccessToken;
 	@Override
 	public String toString() {
 		return "";
