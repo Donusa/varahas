@@ -13,7 +13,7 @@ public class StockNotificationService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
     
-    public void sendUpdate(String itemId, int newStock) {
+    public void sendUpdate(Long itemId, int newStock) {
         StockUpdate update = new StockUpdate(itemId, newStock);
         messagingTemplate.convertAndSend("/topic/stock", update);
     }

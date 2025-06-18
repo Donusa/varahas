@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class StockUpdate {
 	
-	private String itemId;
+	private Long itemId;
     private int newStock;
 
     

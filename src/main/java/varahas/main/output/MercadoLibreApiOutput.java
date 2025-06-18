@@ -32,10 +32,10 @@ import varahas.main.services.TenantService;
 @Service
 public class MercadoLibreApiOutput {
 
-	@Value("${mercadolibre.client.id:3670283929615433}")
+	@Value("${mercadolibre.client.id:7214647968735209}")
 	private String clientId;
 
-	@Value("${mercadolibre.client.secret:gEVsQhSNYzDRXLpLASEK8Iwy56LM8hvo}")
+	@Value("${mercadolibre.client.secret:yivdPpntv5NH523KUhpyKqUltP6lWrAq}")
 	private String clientSecret;
 
 	@Autowired
@@ -118,8 +118,10 @@ public class MercadoLibreApiOutput {
 		map.add("client_id", clientId);
 		map.add("client_secret", clientSecret);
 		map.add("code", code);
-		map.add("redirect_uri", "https://benedicto17.com.ar/");
+		map.add("redirect_uri", "https://benedicto17.com.ar/auth");
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
+		
+		System.out.println("id del cliente: " + clientId);
 
 		try {
 			ResponseEntity<MlTokenResponse> response = restTemplate.postForEntity(url, request, MlTokenResponse.class);
