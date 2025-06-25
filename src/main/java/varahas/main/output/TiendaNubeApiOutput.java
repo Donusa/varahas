@@ -9,8 +9,11 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import varahas.main.dto.TnAuthDto;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.TnProduct;
 
@@ -161,4 +164,31 @@ public class TiendaNubeApiOutput {
 		
 	}
 	
+	public TnAuthDto  tradeCodeForToken(String code) {
+	    if (code == null || code.isEmpty()) {
+	        throw new IncorrectUpdateSemanticsDataAccessException("Código no puede ser nulo o vacío");
+	    }
+
+	    String url = "https://www.tiendanube.com/apps/authorize/token";
+	    String clientId = "18516";
+	    String clientSecret = "c40e01862c6676d7ac3e09dd3db14d677f371fdce99a4a55";
+
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+	    MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+	    body.add("client_id", clientId);
+	    body.add("client_secret", clientSecret);
+	    body.add("grant_type", "authorization_code");
+	    body.add("code", code);
+
+	    HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(body, headers);
+
+	    try {
+	        ResponseEntity<TnAuthDto> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, TnAuthDto.class);
+	        return response.getBody();
+	    } catch (Exception e) {
+	        throw new IncorrectUpdateSemanticsDataAccessException("Error al intercambiar el código por el token: " + e.getMessage());
+	    }
+	}
 }

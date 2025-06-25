@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import varahas.main.dto.TnAuthDto;
 import varahas.main.entities.TnProduct;
 import varahas.main.output.TiendaNubeApiOutput;
 import varahas.main.services.TenantService;
@@ -23,8 +24,25 @@ public class TnController {
 	@Autowired
 	private TenantService tenantService;
 	
+	@GetMapping("/validate")
+	public ResponseEntity<?> validateConnection(@RequestParam String tenantName) {
+		var tenant = this.tenantService.getTenantByName(tenantName);
+		if (tenant == null) {
+			return ResponseEntity.badRequest().body("Tenant no encontrado");
+		}
+		if (tenant.getTiendaNubeAccessToken() == null || tenant.getTiendaNubeAccessToken().isEmpty()) {
+			return ResponseEntity.ok("Token no encontrado, por favor configure uno");
+		}
+		return ResponseEntity.ok("Token válido encontrado");
+	}
+	
 	@PostMapping("/set-token")
-	public ResponseEntity<?> setToken(@RequestBody String token, @RequestParam String tenantName) {
+	public ResponseEntity<?> setToken(@RequestBody String code, @RequestParam String tenantName) {
+		if (code == null || code.isEmpty()) {
+			return ResponseEntity.badRequest().body("Código no puede ser nulo o vacío");
+		}
+		TnAuthDto authData = tiendaNubeApiOutput.tradeCodeForToken(code);
+		String token = authData.getAccessToken();
 		if (token == null || token.isEmpty()) {
 			return ResponseEntity.badRequest().body("Token no puede ser nulo o vacío");
 		}
