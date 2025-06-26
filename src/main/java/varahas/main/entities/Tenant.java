@@ -43,6 +43,12 @@ public class Tenant {
 	private String TiendaNubeAccessToken;
 	@Column(nullable = true)
 	private String mlAccessToken;
+	@Column(nullable = true)
+	private Date mlAccessTokenExpirationDate;
+	@Column(nullable = true)
+	private String mlRefreshToken;
+	@Column(nullable = true)
+	private String tnUserId;
 	@Override
 	public String toString() {
 		return "";

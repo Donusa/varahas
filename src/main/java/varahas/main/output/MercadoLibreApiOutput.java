@@ -1,6 +1,6 @@
 package varahas.main.output;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +24,7 @@ import varahas.main.dto.MlTokenResponse;
 import varahas.main.dto.MlUserItemsResponse;
 import varahas.main.entities.Product;
 import varahas.main.entities.Tenant;
-import varahas.main.entities.TenantAccessToken;
 import varahas.main.services.ProductService;
-import varahas.main.services.TenantAccessTokenService;
 import varahas.main.services.TenantService;
 
 @Service
@@ -45,30 +43,33 @@ public class MercadoLibreApiOutput {
 	private ProductService productService;
 
 	@Autowired
-	private TenantAccessTokenService tenantAccessService;
-
-	@Autowired
 	private TenantService tenantService;
 
 
 	public Boolean validateAcessToken(String tenantName) {
-		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
-		if (accessToken == null || accessToken.getExpirationDate().isBefore(LocalDateTime.now())) {
-			return false;
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		Date expiration = tenant.getMlAccessTokenExpirationDate();
+		
+		if (expiration == null || expiration.before(new Date())) {
+			throw new RuntimeException("Token de acceso inválido o expirado");
 		}
+		
 		return true;
 	}
 
 	public MlTokenResponse getAccessToken(String tenantName) {
 
-		TenantAccessToken accessToken;
-
+		Tenant tenant;
 		try {
-			accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
+			tenant = tenantService.getTenantByName(tenantName);
 		} catch (Exception e) {
-			accessToken = tenantAccessService.saveNew(tenantName);
+			throw new RuntimeException("Tenant no encontrado: " + tenantName);
 		}
-
+		
+		String refreshToken = tenant.getMlRefreshToken();
+		if (refreshToken == null || refreshToken.isEmpty()) {
+			throw new RuntimeException("Refresh token no encontrado para el tenant: " + tenantName);
+		}
 		String url = "https://api.mercadolibre.com/oauth/token";
 
 		HttpHeaders headers = new HttpHeaders();
@@ -78,7 +79,7 @@ public class MercadoLibreApiOutput {
 		map.add("grant_type", "refresh_token");
 		map.add("client_id", clientId);
 		map.add("client_secret", clientSecret);
-		map.add("refresh_token", accessToken.getRefreshToken());
+		map.add("refresh_token", refreshToken);
 
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
@@ -87,9 +88,9 @@ public class MercadoLibreApiOutput {
 
 			MlTokenResponse tokenResponse = response.getBody();
 			if (tokenResponse != null) {
-				accessToken.setAccessToken(tokenResponse.access_token);
-				accessToken.setRefreshToken(tokenResponse.refresh_token);
-				tenantAccessService.save(accessToken);
+				tenant.setMlAccessToken(tokenResponse.access_token);
+				tenant.setMlRefreshToken(tokenResponse.refresh_token);
+				tenantService.save(tenant);
 				return tokenResponse;
 			} else {
 				System.out.println("Error: Token response is null");
@@ -102,11 +103,11 @@ public class MercadoLibreApiOutput {
 	}
 
 	public Object tradeAccessToken(String code, String tenantName) {
-		TenantAccessToken accessToken;
+		Tenant tenant;
 		try {
-			accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
+			tenant = tenantService.getTenantByName(tenantName);
 		} catch (Exception e) {
-			accessToken = tenantAccessService.saveNew(tenantName);
+			throw new RuntimeException("Tenant no encontrado: " + tenantName);
 		}
 		String url = "https://api.mercadolibre.com/oauth/token";
 
@@ -128,12 +129,11 @@ public class MercadoLibreApiOutput {
 
 			MlTokenResponse tokenResponse = response.getBody();
 			if (tokenResponse != null) {
-				Tenant tenant = tenantService.getTenantByName(tenantName);
-				accessToken.setAccessToken(tokenResponse.access_token);
-				accessToken.setRefreshToken(tokenResponse.refresh_token);
+				tenant = tenantService.getTenantByName(tenantName);
+				tenant.setMlAccessToken(tokenResponse.access_token);
+				tenant.setMlRefreshToken(tokenResponse.refresh_token);
 				tenant.setMlUserId(tokenResponse.user_id);
 				tenantService.save(tenant);
-				tenantAccessService.save(accessToken);
 				return tokenResponse;
 			} else {
 				System.out.println("Error: Token response is null");
@@ -150,12 +150,11 @@ public class MercadoLibreApiOutput {
 
 	public List<String> getAllItemsForUser(String tenantName) {
 		Tenant tenant = tenantService.getTenantByName(tenantName);
-		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
 		String url = "https://api.mercadolibre.com/users/" + tenant.getMlUserId() + "/items/search";
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(accessToken.getAccessToken());
+		headers.setBearerAuth(tenant.getMlAccessToken());
 
 		HttpEntity<String> entity = new HttpEntity<>(headers);
 
@@ -167,12 +166,12 @@ public class MercadoLibreApiOutput {
 	}
 
 	public MeliItemDto getItemData(String itemId, String tenantName) {
-		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
+		Tenant tenant = tenantService.getTenantByName(tenantName);
 		String url = "https://api.mercadolibre.com/items/" + itemId;
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(accessToken.getAccessToken());
+		headers.setBearerAuth(tenant.getMlAccessToken());
 
 		HttpEntity<String> entity = new HttpEntity<>(headers);
 
@@ -220,12 +219,12 @@ public class MercadoLibreApiOutput {
 	}
 
 	public MlItemResponse getCurrentMELIStock(String meliId, String tenantName) {
-		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
+		Tenant tenant = tenantService.getTenantByName(tenantName);
 		String url = "https://api.mercadolibre.com/items/" + meliId;
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(accessToken.getAccessToken());
+		headers.setBearerAuth(tenant.getMlAccessToken());
 
 		HttpEntity<String> entity = new HttpEntity<>(headers);
 
@@ -237,11 +236,11 @@ public class MercadoLibreApiOutput {
 
 	public MeliItemDto postProduct(MlProductRequest request, String tenantName) {
 		System.out.println("MercadoLibreApiOutput.postProduct 225");
-		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
-		System.out.println("Aca el tenant:" + accessToken);
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		String accessToken = tenant.getMlAccessToken();
 		String url = "https://api.mercadolibre.com/items";
 		HttpHeaders headers = new HttpHeaders();
-		headers.set("Authorization", "Bearer " + accessToken.getAccessToken());
+		headers.set("Authorization", "Bearer " + accessToken);
 		HttpEntity<MlProductRequest> entity = new HttpEntity<>(request, headers);
 		System.out.println("Request:" + request);
 		ResponseEntity<MeliItemDto> response = restTemplate.exchange(url, HttpMethod.POST, entity, MeliItemDto.class);
@@ -252,10 +251,10 @@ public class MercadoLibreApiOutput {
 	public CategoryResponse[] getCategories(String siteId, String tenantName) {
 		String url = "https://api.mercadolibre.com/sites/MLA/categories";
 		
-		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
+		Tenant tenant = tenantService.getTenantByName(tenantName);
 		
 		HttpHeaders headers = new HttpHeaders();
-		headers.setBearerAuth(accessToken.getAccessToken());
+		headers.setBearerAuth(tenant.getMlAccessToken());
 
 		HttpEntity<Void> request = new HttpEntity<>(headers);
 
@@ -268,9 +267,11 @@ public class MercadoLibreApiOutput {
 	public AttributeResponse[] getCategoryAttributes(String tenantName, String categoryId) {
 	    String url = "https://api.mercadolibre.com/categories/" + categoryId + "/attributes";
 
-		TenantAccessToken accessToken = tenantAccessService.getAccessTokenByTenantName(tenantName);
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		
 	    HttpHeaders headers = new HttpHeaders();
-	    headers.setBearerAuth(accessToken.getAccessToken());
+	    
+	    headers.setBearerAuth(tenant.getMlAccessToken());
 
 	    HttpEntity<Void> request = new HttpEntity<>(headers);
 
