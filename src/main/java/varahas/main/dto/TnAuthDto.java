@@ -17,6 +17,9 @@ public class TnAuthDto {
     private String accessToken;
     @JsonProperty("token_type")
     private String tokenType;
+    @JsonProperty("scope")
+    private String scope;
     @JsonProperty("user_id")
     private Long userId;
+    
 }

@@ -118,7 +118,7 @@ public class MercadoLibreApiOutput {
 		map.add("client_id", clientId);
 		map.add("client_secret", clientSecret);
 		map.add("code", code);
-		map.add("redirect_uri", "https://benedicto17.com.ar/auth");
+		map.add("redirect_uri", "https://benedicto17.com.ar/");
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 		
 		System.out.println("id del cliente: " + clientId);

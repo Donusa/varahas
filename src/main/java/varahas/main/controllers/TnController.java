@@ -37,11 +37,11 @@ public class TnController {
 	}
 	
 	@PostMapping("/set-token")
-	public ResponseEntity<?> setToken(@RequestBody String code, @RequestParam String tenantName) {
+	public ResponseEntity<?> setToken(@RequestParam String code, @RequestParam String tenantName) {
 		if (code == null || code.isEmpty()) {
 			return ResponseEntity.badRequest().body("Código no puede ser nulo o vacío");
 		}
-		TnAuthDto authData = tiendaNubeApiOutput.tradeCodeForToken(code);
+		var authData = tiendaNubeApiOutput.tradeCodeForToken(code);
 		String token = authData.getAccessToken();
 		if (token == null || token.isEmpty()) {
 			return ResponseEntity.badRequest().body("Token no puede ser nulo o vacío");
@@ -50,6 +50,7 @@ public class TnController {
 		if (tenant == null) {
 			return ResponseEntity.badRequest().body("Tenant no encontrado");
 		}
+		
 		tenant.setTiendaNubeAccessToken(token);
 		tenantService.save(tenant);
 		return ResponseEntity.ok("Token guardado correctamente");

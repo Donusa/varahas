@@ -13,6 +13,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import varahas.main.dto.TnAuthDto;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.TnProduct;
@@ -20,10 +22,10 @@ import varahas.main.entities.TnProduct;
 @Service
 public class TiendaNubeApiOutput {
 	
-	@Value("${varahas.tn.api.agent:Varahas-testing 18516}")
+	@Value("${varahas.tn.api.agent:Varahas-testing 18768}")
 	private String userAgent;
 	
-	@Value("${varahas.tn.api.id:6345992}")
+	@Value("${varahas.tn.api.id:6385727}")
     private String apiId;
 	
 	@Value("${varahas.tn.api.token:3754158629ec4945a94cbeca88789caf77a1dbb2}")
@@ -164,17 +166,18 @@ public class TiendaNubeApiOutput {
 		
 	}
 	
-	public TnAuthDto  tradeCodeForToken(String code) {
+	public TnAuthDto tradeCodeForToken(String code) {
 	    if (code == null || code.isEmpty()) {
 	        throw new IncorrectUpdateSemanticsDataAccessException("Código no puede ser nulo o vacío");
 	    }
 
 	    String url = "https://www.tiendanube.com/apps/authorize/token";
-	    String clientId = "18516";
-	    String clientSecret = "c40e01862c6676d7ac3e09dd3db14d677f371fdce99a4a55";
+	    String clientId = "18768";
+	    String clientSecret = "07bdfd1f6929942799b4f5f4fed9d0b4c1bae811b6808eea";
 
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
 
 	    MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
 	    body.add("client_id", clientId);
@@ -185,10 +188,14 @@ public class TiendaNubeApiOutput {
 	    HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(body, headers);
 
 	    try {
-	        ResponseEntity<TnAuthDto> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, TnAuthDto.class);
-	        return response.getBody();
+	        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+	        System.out.println(response.getBody());
+	        ObjectMapper objectMapper = new ObjectMapper();
+	        TnAuthDto dto = objectMapper.readValue(response.getBody(), TnAuthDto.class);
+	        return dto;
 	    } catch (Exception e) {
 	        throw new IncorrectUpdateSemanticsDataAccessException("Error al intercambiar el código por el token: " + e.getMessage());
 	    }
+	
 	}
 }
