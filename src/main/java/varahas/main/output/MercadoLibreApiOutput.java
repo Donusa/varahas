@@ -90,6 +90,8 @@ public class MercadoLibreApiOutput {
 			if (tokenResponse != null) {
 				tenant.setMlAccessToken(tokenResponse.access_token);
 				tenant.setMlRefreshToken(tokenResponse.refresh_token);
+				tenant.setMlAccessTokenExpirationDate(
+					    new Date(System.currentTimeMillis() + 3 * 60 * 60 * 1000L));
 				tenantService.save(tenant);
 				return tokenResponse;
 			} else {
@@ -133,6 +135,8 @@ public class MercadoLibreApiOutput {
 				tenant.setMlAccessToken(tokenResponse.access_token);
 				tenant.setMlRefreshToken(tokenResponse.refresh_token);
 				tenant.setMlUserId(tokenResponse.user_id);
+				tenant.setMlAccessTokenExpirationDate(
+					    new Date(System.currentTimeMillis() + 3 * 60 * 60 * 1000L));
 				tenantService.save(tenant);
 				return tokenResponse;
 			} else {
