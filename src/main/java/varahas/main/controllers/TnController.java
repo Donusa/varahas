@@ -49,10 +49,7 @@ public class TnController {
 		if (tenant == null) {
 			return ResponseEntity.badRequest().body("Tenant no encontrado");
 		}
-		
-		tenant.setTiendaNubeAccessToken(token);
-		tenant.setTiendaNubeAccessToken(authData.getAccessToken());
-		tenantService.save(tenant);
+		tenantService.setTnData(tenant, authData);
 		return ResponseEntity.ok("Token guardado correctamente");
 	}
 	
