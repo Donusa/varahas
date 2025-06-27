@@ -36,6 +36,7 @@ public class TenantService {
 			throw new IllegalArgumentException("Tenant or authData cannot be null");
 		}
 		tenant.setTiendaNubeAccessToken(authData.getAccessToken());
+		tenant.setTnUserId(authData.getUserId().toString());
 		tenantRepository.save(tenant);
 		
 	}
