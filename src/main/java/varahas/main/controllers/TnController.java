@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import varahas.main.dto.TnAuthDto;
 import varahas.main.entities.TnProduct;
 import varahas.main.output.TiendaNubeApiOutput;
 import varahas.main.services.TenantService;
@@ -52,6 +51,7 @@ public class TnController {
 		}
 		
 		tenant.setTiendaNubeAccessToken(token);
+		tenant.setTiendaNubeAccessToken(authData.getAccessToken());
 		tenantService.save(tenant);
 		return ResponseEntity.ok("Token guardado correctamente");
 	}
