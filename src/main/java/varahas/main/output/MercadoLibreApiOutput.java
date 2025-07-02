@@ -22,9 +22,7 @@ import varahas.main.dto.MlItemResponse;
 import varahas.main.dto.MlProductRequest;
 import varahas.main.dto.MlTokenResponse;
 import varahas.main.dto.MlUserItemsResponse;
-import varahas.main.entities.Product;
 import varahas.main.entities.Tenant;
-import varahas.main.services.ProductService;
 import varahas.main.services.TenantService;
 
 @Service
@@ -38,9 +36,6 @@ public class MercadoLibreApiOutput {
 
 	@Autowired
 	private RestTemplate restTemplate;
-
-	@Autowired
-	private ProductService productService;
 
 	@Autowired
 	private TenantService tenantService;
@@ -182,39 +177,6 @@ public class MercadoLibreApiOutput {
 		ResponseEntity<MeliItemDto> response = restTemplate.exchange(url, HttpMethod.GET, entity, MeliItemDto.class);
 
 		return response.getBody();
-	}
-
-	public Integer syncStockWithMercadoLibre(Long productId, String tenantName) {
-		Product product = productService.getProduct(productId);
-
-		if (product.getIsOnMercadoLibre() == 0 || product.getMercadoLibreId() == null
-				|| product.getMercadoLibreId().isEmpty()) {
-			throw new RuntimeException("Product does not have a Mercado Libre ID");
-		}
-
-		Integer localMlStock = product.getMeliItem().getAvailableQuantity();
-		Integer currentMlStock = getAvailableQuantity(product.getMercadoLibreId(), tenantName);
-
-		if (currentMlStock == null) {
-			throw new RuntimeException("Failed to retrieve stock from Mercado Libre");
-		}
-
-		Integer salesOnMl = localMlStock - currentMlStock;
-
-		if (salesOnMl > 0) {
-			Integer updatedStock = product.getStock() - salesOnMl;
-
-			if (updatedStock < 0) {
-				updatedStock = 0;
-			}
-
-			product.setStock(updatedStock);
-
-			product.getMeliItem().setAvailableQuantity(currentMlStock);
-			productService.saveProduct(product);
-		}
-
-		return salesOnMl > 0 ? salesOnMl : 0;
 	}
 
 	public Integer getAvailableQuantity(String meliId, String tenantName) {

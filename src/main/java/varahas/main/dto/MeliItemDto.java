@@ -51,4 +51,6 @@ public class MeliItemDto {
     @JsonProperty("last_updated")
     private ZonedDateTime lastUpdated;
 
+
+    private List<MeliVariationDto> variations;
 }

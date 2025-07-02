@@ -31,6 +31,11 @@ public class TenantService {
 				.orElseThrow(() -> new RuntimeException("Tenant not found for user_id: " + userId));
 	}
 
+	public Tenant findByTnUserId(String userId) {
+		return this.tenantRepository.findByTnUserId(userId)
+				.orElseThrow(() -> new RuntimeException("Tenant not found for user_id: " + userId));
+	}
+	
 	public void setTnData(Tenant tenant, TnAuthDto authData) {
 		if (tenant == null || authData == null) {
 			throw new IllegalArgumentException("Tenant or authData cannot be null");

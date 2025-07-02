@@ -15,5 +15,6 @@ public interface TenantRepository extends JpaRepository<Tenant, Long> {
     @NonNull
     Optional<Tenant> findById(@NonNull Long id);
     Optional<Tenant> findByMlUserId(String mlUserId);
+    Optional<Tenant> findByTnUserId(String tnUserId);
 
 }
