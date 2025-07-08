@@ -16,6 +16,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import varahas.main.dto.TnAuthDto;
@@ -204,17 +205,19 @@ public class TiendaNubeApiOutput {
 
 	public Integer getVariationStock(String tnVariationId, Tenant tenant) {
 	    try {
-	        // Convertimos el tnId a Long para compararlo con el ID de la variant en la respuesta
 	        Long variationIdLong = Long.parseLong(tnVariationId);
 
-	        // Recorremos todos los productos del tenant
 	        Object[] allProducts = (Object[]) getAllProductsForUser(tenant);
 
 	        for (Object productRaw : allProducts) {
 	            ObjectMapper mapper = new ObjectMapper();
-	            Map<String, Object> product = mapper.convertValue(productRaw, Map.class);
+	            Map<String, Object> product = mapper.convertValue(
+	            	    productRaw, new TypeReference<Map<String, Object>>() {}
+	            	);
 
-	            List<Map<String, Object>> variants = (List<Map<String, Object>>) product.get("variants");
+	            	List<Map<String, Object>> variants = mapper.convertValue(
+	            	    product.get("variants"), new TypeReference<List<Map<String, Object>>>() {}
+	            	);
 	            if (variants == null) continue;
 
 	            for (Map<String, Object> variant : variants) {
@@ -224,7 +227,9 @@ public class TiendaNubeApiOutput {
 	                    if (stockObj != null) {
 	                        return Integer.parseInt(stockObj.toString());
 	                    }}
-	                    List<Map<String, Object>> inventoryLevels = (List<Map<String, Object>>) variant.get("inventory_levels");
+	                List<Map<String, Object>> inventoryLevels = mapper.convertValue(
+	                	    variant.get("inventory_levels"), new TypeReference<List<Map<String, Object>>>() {}
+	                	);
 	                    if (inventoryLevels != null && !inventoryLevels.isEmpty()) {
 	                        Object stockInv = inventoryLevels.get(0).get("stock");
 	                        if (stockInv != null) {

@@ -17,6 +17,7 @@ import varahas.main.dto.StockUpdate;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.Variations;
 import varahas.main.output.MercadoLibreApiOutput;
+import varahas.main.output.TiendaNubeApiOutput;
 import varahas.main.services.TenantService;
 import varahas.main.services.VariationService;
 
@@ -28,6 +29,8 @@ public class WebhooksController {
 	private TenantService tenantService;
 	@Autowired
 	private MercadoLibreApiOutput mercadoLibreApiOutput;
+	@Autowired
+	private TiendaNubeApiOutput tiendaNubeApiOutput;
 	@Autowired
 	private SimpMessagingTemplate messagingTemplate;
 	@Autowired
@@ -81,21 +84,46 @@ public class WebhooksController {
 
 	@PostMapping("/tn")
 	public ResponseEntity<Void> recibirNotificacionTN(@RequestBody Map<String, Object> payload) {
-		System.out.println("📦 Notificación recibida de Tienda Nube:");
-		payload.forEach((k, v) -> System.out.println(k + ": " + v));
+		 System.out.println("📦 Notificación recibida de Tienda Nube:");
+		    payload.forEach((k, v) -> System.out.println(k + ": " + v));
 
-		String storeId = String.valueOf(payload.get("store_id"));
-		String productId = String.valueOf(payload.get("product_id"));
+		    try {
+		        String storeId = String.valueOf(payload.get("store_id"));
+		        String variationId = String.valueOf(payload.get("variation_id"));
 
-		Tenant tenant = tenantService.findByTnUserId(storeId);
-		if (tenant == null) {
-			System.out.println("🚫 No se encontró el tenant para el store_id: " + storeId);
-			return ResponseEntity.badRequest().build();
-		}
+		        Tenant tenant = tenantService.findByTnUserId(storeId);
+		        if (tenant == null) {
+		            System.out.println("🚫 No se encontró el tenant para el store_id: " + storeId);
+		            return ResponseEntity.badRequest().build();
+		        }
 
-		System.out.println("✅ Notificación de Tienda Nube recibida correctamente para el producto: " + productId);
+		        Optional<Variations> optionalVariation = variationService.getByTnId(variationId);
+		        if (optionalVariation.isEmpty()) {
+		            System.out.println("⚠️ No se encontró la variation local para tnId: " + variationId);
+		            return ResponseEntity.badRequest().build();
+		        }
 
-		return ResponseEntity.ok().build();
+		        Variations variation = optionalVariation.get();
+
+		        Integer stockDesdeTn = tiendaNubeApiOutput.getVariationStock(variationId, tenant);
+		        if (stockDesdeTn == null) {
+		            System.out.println("⚠️ No se pudo obtener el stock desde Tienda Nube");
+		            return ResponseEntity.badRequest().build();
+		        }
+
+		        variationService.updateStockFromWebhook(variation.getId(), stockDesdeTn);
+
+		        StockUpdate stockUpdate = variationService.buildStockUpdate(variation.getProduct());
+		        messagingTemplate.convertAndSend("/topic/stock", stockUpdate);
+
+		        System.out.println("✅ Notificación de Tienda Nube procesada correctamente.");
+
+		        return ResponseEntity.ok().build();
+
+		    } catch (Exception e) {
+		        System.out.println("🚫 Error al procesar la notificación: " + e.getMessage());
+		        return ResponseEntity.badRequest().build();
+		    }
 	}
 
 }
