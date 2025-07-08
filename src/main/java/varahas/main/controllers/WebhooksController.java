@@ -1,6 +1,7 @@
 package varahas.main.controllers;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,25 +12,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import varahas.main.dto.MeliItemDto;
+import varahas.main.dto.MeliVariationDto;
 import varahas.main.dto.StockUpdate;
-import varahas.main.entities.Product;
 import varahas.main.entities.Tenant;
+import varahas.main.entities.Variations;
 import varahas.main.output.MercadoLibreApiOutput;
-import varahas.main.services.ProductService;
 import varahas.main.services.TenantService;
+import varahas.main.services.VariationService;
 
 @RestController
 @RequestMapping("/webhooks")
 public class WebhooksController {
 
 	@Autowired
-	private ProductService productService;
-	@Autowired
 	private TenantService tenantService;
 	@Autowired
 	private MercadoLibreApiOutput mercadoLibreApiOutput;
 	@Autowired
 	private SimpMessagingTemplate messagingTemplate;
+	@Autowired
+	private VariationService variationService;
 
 	@PostMapping("/ml")
 	public ResponseEntity<Void> recibirNotificacion(@RequestBody Map<String, Object> payload) {
@@ -46,21 +48,29 @@ public class WebhooksController {
 				System.out.println("🚫 No se encontró el tenant para el user_id: " + userId);
 				return ResponseEntity.badRequest().build();
 			}
-
-			Product product = productService.getProductByMercadoLibreId(itemId);
-			if (product == null) {
-				System.out.println("🚫 No se encontró el producto para el item_id: " + itemId);
-				return ResponseEntity.badRequest().build();
-			}
-
 			MeliItemDto item = mercadoLibreApiOutput.getItemData(itemId, tenant.getName());
-			if (item == null) {
-				System.out.println(
-						"🚫 No se pudo obtener los datos del item desde Mercado Libre para el item_id: " + itemId);
-				return ResponseEntity.badRequest().build();
-			}
-			// cambiar por calculo apropiado
-			messagingTemplate.convertAndSend("/topic/stock", new StockUpdate(product.getId(), 1));
+	        if (item == null || item.getVariations() == null || item.getVariations().isEmpty()) {
+	            System.out.println("🚫 El item no tiene variaciones: " + itemId);
+	            return ResponseEntity.badRequest().build();
+	        }
+
+	        for (MeliVariationDto meliVar : item.getVariations()) {
+	            Long meliVariationId = meliVar.getId();
+	            Integer meliStock = meliVar.getAvailableQuantity();
+
+	            Optional<Variations> optionalVar = variationService.getByMeliId(String.valueOf(meliVariationId));
+	            if (optionalVar.isEmpty()) {
+	                System.out.println("⚠️ No se encontró la variation local para meliId: " + meliVariationId);
+	                continue;
+	            }
+
+	            Variations variation = optionalVar.get();
+
+	            variationService.updateStockFromWebhook(variation.getId(), meliStock);
+
+	            StockUpdate stockUpdate = variationService.buildStockUpdate(variation.getProduct());
+	            messagingTemplate.convertAndSend("/topic/stock", stockUpdate);
+	        }
 		} catch (Exception e) {
 			System.out.println("🚫 Error al procesar la notificación: " + e.getMessage());
 			System.out.println("TenantName o itemId no encontrados");

@@ -1,5 +1,8 @@
 package varahas.main.output;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.IncorrectUpdateSemanticsDataAccessException;
@@ -197,5 +200,46 @@ public class TiendaNubeApiOutput {
 	        throw new IncorrectUpdateSemanticsDataAccessException("Error al intercambiar el código por el token: " + e.getMessage());
 	    }
 	
+	}
+
+	public Integer getVariationStock(String tnVariationId, Tenant tenant) {
+	    try {
+	        // Convertimos el tnId a Long para compararlo con el ID de la variant en la respuesta
+	        Long variationIdLong = Long.parseLong(tnVariationId);
+
+	        // Recorremos todos los productos del tenant
+	        Object[] allProducts = (Object[]) getAllProductsForUser(tenant);
+
+	        for (Object productRaw : allProducts) {
+	            ObjectMapper mapper = new ObjectMapper();
+	            Map<String, Object> product = mapper.convertValue(productRaw, Map.class);
+
+	            List<Map<String, Object>> variants = (List<Map<String, Object>>) product.get("variants");
+	            if (variants == null) continue;
+
+	            for (Map<String, Object> variant : variants) {
+	                Long variantId = ((Number) variant.get("id")).longValue();
+	                if (variantId.equals(variationIdLong)) {
+	                    Object stockObj = variant.get("stock");
+	                    if (stockObj != null) {
+	                        return Integer.parseInt(stockObj.toString());
+	                    }}
+	                    List<Map<String, Object>> inventoryLevels = (List<Map<String, Object>>) variant.get("inventory_levels");
+	                    if (inventoryLevels != null && !inventoryLevels.isEmpty()) {
+	                        Object stockInv = inventoryLevels.get(0).get("stock");
+	                        if (stockInv != null) {
+	                            return Integer.parseInt(stockInv.toString());
+	                        }
+	                    }
+
+	                    return null;
+	                }
+	            }
+
+	        return null;
+
+	    } catch (Exception e) {
+	        throw new IncorrectUpdateSemanticsDataAccessException("Error al obtener el stock de la variación TN: " + e.getMessage());
+	    }
 	}
 }

@@ -1,5 +1,7 @@
 package varahas.main.dto;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,10 +12,21 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class StockUpdate {
-	
-	private Long itemId;
-    private int newStock;
 
-    
+    private Long productId;
+    private int totalStock;
+    private List<VariationStockDto> variations;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class VariationStockDto {
+        private Long variationId;
+        private String name;
+        private Integer stock;
+        private String meliId;
+        private String tnId;
+    }
     
 }

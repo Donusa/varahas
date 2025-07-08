@@ -34,10 +34,4 @@ public class Product {
 	private String tennantName;
 	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Variations> variations;
-	/*@OneToOne(cascade = CascadeType.ALL)
-	@JoinColumn(name = "meli_item_id")
-	private MeliItem meliItem;
-	@OneToOne(cascade = CascadeType.ALL)
-	@JoinColumn(name = "tn_product_id")
-	private TnProduct tnProduct;*/
 }
