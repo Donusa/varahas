@@ -109,7 +109,26 @@ public class TiendaNubeApiOutput {
 
 		try {
 			ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, Object.class);
-			return response.getBody();
+			Object product = response.getBody();
+		
+			ObjectMapper mapper = new ObjectMapper();
+			Map<String, Object> productMap = mapper.convertValue(
+				product, new TypeReference<Map<String, Object>>() {}
+			);
+			
+			String variantsUrl = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + itemId + "/variants";
+			try {
+				ResponseEntity<Object[]> variantsResponse = restTemplate.exchange(
+					variantsUrl, HttpMethod.GET, requestEntity, Object[].class
+				);
+				if (variantsResponse.getStatusCode().is2xxSuccessful() && variantsResponse.getBody() != null) {
+					productMap.put("variants", variantsResponse.getBody());
+				}
+			} catch (Exception variantException) {
+				System.out.println("No se pudieron obtener las variantes: " + variantException.getMessage());
+			}
+			
+			return productMap;
 
 		} catch (Exception e) {
 			throw new IncorrectUpdateSemanticsDataAccessException("Error al obtener el producto: " + e.getMessage());
