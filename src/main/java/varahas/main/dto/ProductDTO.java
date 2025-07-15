@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import varahas.main.entities.Product;
+import varahas.main.entities.Variations;
 
 @Data
 @Builder
@@ -23,6 +24,7 @@ public class ProductDTO {
 	private String mercadoLibreId;
 	private byte isOnMercadoLibre;
 	private byte isOnTiendaNube;
+	private List<Variations> variations;
 	
 	public static List<ProductDTO> fromList(List<Product> prods) {
 		return prods.stream().map(ProductDTO::from).toList();
@@ -38,6 +40,7 @@ public class ProductDTO {
                 .mercadoLibreId(prod.getMercadoLibreId())
                 .isOnMercadoLibre(prod.getIsOnMercadoLibre())
                 .isOnTiendaNube(prod.getIsOnTiendaNube())
+                .variations(prod.getVariations())
                 .build();
 	}
 }
