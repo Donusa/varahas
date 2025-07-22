@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.dao.IncorrectUpdateSemanticsDataAccessException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -93,7 +94,7 @@ public class TiendaNubeApiOutput {
 		}
 	}
 	
-	public Object getItemById(String itemId, Tenant tenant) {
+	public Map<String,Object> getItemById(String itemId, Tenant tenant) {
 		if (itemId == null || itemId.isEmpty() || tenant == null) {
 			throw new IncorrectUpdateSemanticsDataAccessException("ID del producto o tenant no pueden ser nulos");
 		}
@@ -106,7 +107,7 @@ public class TiendaNubeApiOutput {
 		headers.set("User-Agent", userAgent);
 
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
-
+		
 		try {
 			ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, Object.class);
 			Object product = response.getBody();
@@ -115,19 +116,20 @@ public class TiendaNubeApiOutput {
 			Map<String, Object> productMap = mapper.convertValue(
 				product, new TypeReference<Map<String, Object>>() {}
 			);
-			
+			/*
 			String variantsUrl = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + itemId + "/variants";
 			try {
-				ResponseEntity<Object[]> variantsResponse = restTemplate.exchange(
-					variantsUrl, HttpMethod.GET, requestEntity, Object[].class
+				ResponseEntity<List<Map<String,Object>>> variantsResponse = restTemplate.exchange(
+					variantsUrl, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<List<Map<String,Object>>>(){
+					}
 				);
 				if (variantsResponse.getStatusCode().is2xxSuccessful() && variantsResponse.getBody() != null) {
 					productMap.put("variants", variantsResponse.getBody());
 				}
+				System.out.println(variantsResponse.toString());
 			} catch (Exception variantException) {
 				System.out.println("No se pudieron obtener las variantes: " + variantException.getMessage());
-			}
-			
+			}*/
 			return productMap;
 
 		} catch (Exception e) {
@@ -221,49 +223,32 @@ public class TiendaNubeApiOutput {
 	    }
 	
 	}
-
-	public Integer getVariationStock(String tnVariationId, Tenant tenant) {
-	    try {
-	        Long variationIdLong = Long.parseLong(tnVariationId);
-
-	        Object[] allProducts = (Object[]) getAllProductsForUser(tenant);
-
-	        for (Object productRaw : allProducts) {
-	            ObjectMapper mapper = new ObjectMapper();
-	            Map<String, Object> product = mapper.convertValue(
-	            	    productRaw, new TypeReference<Map<String, Object>>() {}
-	            	);
-
-	            	List<Map<String, Object>> variants = mapper.convertValue(
-	            	    product.get("variants"), new TypeReference<List<Map<String, Object>>>() {}
-	            	);
-	            if (variants == null) continue;
-
-	            for (Map<String, Object> variant : variants) {
-	                Long variantId = ((Number) variant.get("id")).longValue();
-	                if (variantId.equals(variationIdLong)) {
-	                    Object stockObj = variant.get("stock");
-	                    if (stockObj != null) {
-	                        return Integer.parseInt(stockObj.toString());
-	                    }}
-	                List<Map<String, Object>> inventoryLevels = mapper.convertValue(
-	                	    variant.get("inventory_levels"), new TypeReference<List<Map<String, Object>>>() {}
-	                	);
-	                    if (inventoryLevels != null && !inventoryLevels.isEmpty()) {
-	                        Object stockInv = inventoryLevels.get(0).get("stock");
-	                        if (stockInv != null) {
-	                            return Integer.parseInt(stockInv.toString());
-	                        }
-	                    }
-
-	                    return null;
-	                }
-	            }
-
-	        return null;
-
-	    } catch (Exception e) {
-	        throw new IncorrectUpdateSemanticsDataAccessException("Error al obtener el stock de la variación TN: " + e.getMessage());
-	    }
+	
+	public List<Map<String,Object>> getVariants(String itemId,Tenant tenant){
+		
+		if (itemId == null || itemId.isEmpty() || tenant == null) {
+			throw new IncorrectUpdateSemanticsDataAccessException("ID del producto o tenant no pueden ser nulos");
+		}
+		
+		String variantsUrl = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + itemId + "/variants";
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
+		headers.set("User-Agent", userAgent);
+		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+		
+		try {
+			ResponseEntity<List<Map<String,Object>>> variantsResponse = restTemplate.exchange(
+				variantsUrl, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<List<Map<String,Object>>>(){
+				}
+			);
+			System.out.println(variantsResponse.toString());
+			
+			return variantsResponse.getBody();
+		} catch (Exception variantException) {
+			System.out.println("No se pudieron obtener las variantes: " + variantException.getMessage());
+			return null;
+		}
 	}
+	
 }

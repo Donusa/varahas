@@ -29,6 +29,7 @@ public class Variations {
 	private Integer stock;
 	private String meliId;
 	private String tnId;
+	private String mlau;
 	@ManyToOne
 	@JoinColumn(name = "product_id")
 	@JsonBackReference

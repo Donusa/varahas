@@ -24,7 +24,7 @@ public class VariationService {
     private ProductRepository productRepository;
 
     @Transactional
-    public void updateStockFromWebhook(Long variationId, int newRemoteStock) {
+    public void updateStockFromWebhookMl(Long variationId, int newRemoteStock) {
         Variations variation = variationRepository.findByIdForUpdate(variationId)
                 .orElseThrow(() -> new IllegalArgumentException("Variation not found"));
 
@@ -72,4 +72,15 @@ public class VariationService {
                 .variations(variationDtos)
                 .build();
     }
+    
+    public Variations findByMlau(String mlau){
+    	return variationRepository.findByMlau(mlau).orElseThrow(()->new RuntimeException("Mlau no encontrado"));
+    }
+    
+    public Optional<Variations>findByMlau(String mlau,Boolean dato){
+    	System.out.println("findByMlau 81");
+    	System.out.println("Mlau:"+mlau);
+    	return variationRepository.findByMlau(mlau);
+    }
+    
 }

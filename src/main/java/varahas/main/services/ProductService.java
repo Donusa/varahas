@@ -46,6 +46,9 @@ public class ProductService {
 		return productRepository.findAllByTennantName(tennantName)
 				.orElseThrow(() -> new IllegalArgumentException("Product not found"));
 	}
+	public Product findByTiendaNubeId(String tiendaNubeId){
+		return productRepository.findByTiendaNubeId(tiendaNubeId).orElseThrow(()-> new RuntimeException("Product not found"));
+	}
 	
 	public void isProductFromTennant(Long productId, String tennantName) {
         Product product = productRepository.findById(productId).orElseThrow(

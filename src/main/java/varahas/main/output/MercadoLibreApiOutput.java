@@ -2,12 +2,16 @@ package varahas.main.output;
 
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -15,15 +19,20 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import varahas.main.dao.MlauDao;
 import varahas.main.dto.AttributeResponse;
 import varahas.main.dto.CategoryResponse;
 import varahas.main.dto.MeliItemDto;
 import varahas.main.dto.MlItemResponse;
 import varahas.main.dto.MlProductRequest;
 import varahas.main.dto.MlTokenResponse;
+import varahas.main.dto.MlUpdateProductRequest;
 import varahas.main.dto.MlUserItemsResponse;
+import varahas.main.entities.Product;
 import varahas.main.entities.Tenant;
+import varahas.main.entities.Variations;
 import varahas.main.services.TenantService;
+import varahas.main.services.VariationService;
 
 @Service
 public class MercadoLibreApiOutput {
@@ -39,6 +48,9 @@ public class MercadoLibreApiOutput {
 
 	@Autowired
 	private TenantService tenantService;
+	
+	@Autowired
+	private VariationService variationService;
 
 
 	public Boolean validateAcessToken(String tenantName) {
@@ -165,9 +177,10 @@ public class MercadoLibreApiOutput {
 	}
 
 	public MeliItemDto getItemData(String itemId, String tenantName) {
+		System.out.println("getItemData 177");
 		Tenant tenant = tenantService.getTenantByName(tenantName);
 		String url = "https://api.mercadolibre.com/items/" + itemId;
-
+		System.out.println(itemId + "--"+ tenant.getName());
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setBearerAuth(tenant.getMlAccessToken());
@@ -249,6 +262,55 @@ public class MercadoLibreApiOutput {
 	    );
 
 	    return response.getBody();
+	}
+	
+	public Boolean stockUpdate(String itemId,String tenantName,MlUpdateProductRequest request){
+		String url = "https://api.mercadolibre.com/items/"+itemId;
+		
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		
+		String accessToken = tenant.getMlAccessToken();
+		
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Authorization", "Bearer " + accessToken);
+		
+		HttpEntity<MlUpdateProductRequest> entity = new HttpEntity<>(request, headers);
+		
+		System.out.println("Request:" + request);
+		try {
+		ResponseEntity<MeliItemDto> response = restTemplate.exchange(url, HttpMethod.PUT, entity, MeliItemDto.class);
+		if("200 OK".equals(response.getStatusCode().toString())){
+			return true;
+		}
+		
+		return false;
+		
+		
+		}catch (Exception e){
+			System.out.println(e.getMessage());
+			return false;
+		}
+		
+	}
+	
+	
+	public MlauDao findMlId(String str){
+		
+		if(str.contains("MLAU")){
+			Pattern p = Pattern.compile("(ML[A-Z]*\\d+)(?=/|$)");
+			Matcher matcher = p.matcher(str);
+			if(matcher.find()){
+				Variations variations = variationService.findByMlau(matcher.group(1));
+				Product product = variations.getProduct();
+				
+				
+				return MlauDao.builder()
+						.mla(product.getMercadoLibreId())
+						.mlau(variations.getMlau())
+						.build();
+			}
+		}
+		throw new RuntimeException("No se encontro match");
 	}
 
 }

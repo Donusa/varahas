@@ -21,4 +21,6 @@ public interface VariationRepository extends JpaRepository<Variations, Long> {
     Optional<Variations> findByMeliId(String meliId);
 
     Optional<Variations> findByTnId(String tnId);
+    
+    Optional<Variations> findByMlau(String mlau);
 }
