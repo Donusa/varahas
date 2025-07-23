@@ -85,8 +85,6 @@ public class VariationService {
 	}
 
 	public Optional<Variations> findByMlau(String mlau, Boolean dato) {
-		System.out.println("findByMlau 81");
-		System.out.println("Mlau:" + mlau);
 		return variationRepository.findByMlau(mlau);
 	}
 

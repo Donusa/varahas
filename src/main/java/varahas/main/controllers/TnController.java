@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import varahas.main.dto.TnStockUpdateDto;
+import varahas.main.dto.TnVariationUpdateDto;
 import varahas.main.entities.TnProduct;
 import varahas.main.output.TiendaNubeApiOutput;
 import varahas.main.services.TenantService;
@@ -91,14 +91,29 @@ public class TnController {
 	}
 	
 	@PutMapping
-	public ResponseEntity<?> updateProduct(@RequestBody List<TnStockUpdateDto> productData, @RequestParam String tenantName, @RequestParam Long id) {
+	public ResponseEntity<?> updateProduct(
+	    @RequestBody List<TnVariationUpdateDto> variants,
+	    @RequestParam String tenantName,
+	    @RequestParam Long id
+	) {
+	    var tenant = this.tenantService.getTenantByName(tenantName);
+	    if (tenant == null) {
+	        return ResponseEntity.badRequest().body("Tenant no encontrado");
+	    }
 
-		var tenant = this.tenantService.getTenantByName(tenantName);
-		if (tenant == null) {
-			return ResponseEntity.badRequest().body("Tenant no encontrado");
-		}
-		var response = tiendaNubeApiOutput.updateProduct(productData, tenant, id);
-		return ResponseEntity.ok(response);
+	    try {
+	        for (TnVariationUpdateDto variant : variants) {
+	            tiendaNubeApiOutput.updateVariant(
+	                id, 
+	                variant.getId(), 
+	                variant.getStock(), 
+	                tenant
+	            );
+	        }
+	        return ResponseEntity.ok("Variantes actualizadas correctamente");
+	    } catch (Exception e) {
+	        return ResponseEntity.badRequest().body("Error al actualizar las variantes: " + e.getMessage());
+	    }
 	}
 	
 	@GetMapping("/categories")

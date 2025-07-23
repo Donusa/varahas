@@ -2,6 +2,7 @@ package varahas.main.output;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,12 +22,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import varahas.main.dto.TnAuthDto;
-import varahas.main.dto.TnInventoryLevelsDto;
 import varahas.main.dto.TnStockUpdateDto;
 import varahas.main.dto.TnVariationUpdateDto;
 import varahas.main.entities.Product;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.TnProduct;
+import varahas.main.entities.Variations;
 import varahas.main.services.TenantService;
 
 @Service
@@ -125,20 +126,6 @@ public class TiendaNubeApiOutput {
 			Map<String, Object> productMap = mapper.convertValue(
 				product, new TypeReference<Map<String, Object>>() {}
 			);
-			/*
-			String variantsUrl = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + itemId + "/variants";
-			try {
-				ResponseEntity<List<Map<String,Object>>> variantsResponse = restTemplate.exchange(
-					variantsUrl, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<List<Map<String,Object>>>(){
-					}
-				);
-				if (variantsResponse.getStatusCode().is2xxSuccessful() && variantsResponse.getBody() != null) {
-					productMap.put("variants", variantsResponse.getBody());
-				}
-				System.out.println(variantsResponse.toString());
-			} catch (Exception variantException) {
-				System.out.println("No se pudieron obtener las variantes: " + variantException.getMessage());
-			}*/
 			return productMap;
 
 		} catch (Exception e) {
@@ -147,25 +134,30 @@ public class TiendaNubeApiOutput {
 	}
 
 
-	public Object updateProduct(List<TnStockUpdateDto> productData, Tenant tenant, Long id) {
-		String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + id;
+	public Object updateProduct(Long productId, List<TnVariationUpdateDto> variants, Tenant tenant) {
+	    String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + productId;
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.APPLICATION_JSON);
+	    headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
+	    headers.set("User-Agent", userAgent);
 
-		HttpEntity<List<TnStockUpdateDto>> requestEntity = new HttpEntity<>(productData, headers);
+	    Map<String, Object> body = Map.of("variants", variants);
 
-		try {
-			ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.PUT, requestEntity, Object.class);
-			System.out.println("Response status: " + response.getStatusCode());
-			System.out.println("Response body: " + response.getBody());
-			return response.getBody();
+	    HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
-		} catch (Exception e) {
-			throw new IncorrectUpdateSemanticsDataAccessException("Error al actualizar el producto: " + e.getMessage());
-		}
+	    try {
+	        ResponseEntity<Object> response = restTemplate.exchange(
+	            url,
+	            HttpMethod.PUT,
+	            requestEntity,
+	            Object.class
+	        );
+	        return response.getBody();
+
+	    } catch (Exception e) {
+	        throw new IncorrectUpdateSemanticsDataAccessException("Error al actualizar el producto: " + e.getMessage());
+	    }
 	}
 
 
@@ -223,7 +215,6 @@ public class TiendaNubeApiOutput {
 
 	    try {
 	        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
-	        System.out.println(response.getBody());
 	        ObjectMapper objectMapper = new ObjectMapper();
 	        TnAuthDto dto = objectMapper.readValue(response.getBody(), TnAuthDto.class);
 	        return dto;
@@ -251,7 +242,6 @@ public class TiendaNubeApiOutput {
 				variantsUrl, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<List<Map<String,Object>>>(){
 				}
 			);
-			System.out.println(variantsResponse.toString());
 			
 			return variantsResponse.getBody();
 		} catch (Exception variantException) {
@@ -261,23 +251,49 @@ public class TiendaNubeApiOutput {
 	}
 	
 
-	public void notifyTiendaNube(Product product) {
-	    List<TnStockUpdateDto> tnUpdate = product.getVariations().stream().map(v ->
-	        TnStockUpdateDto.builder()
-	            .tnId(v.getTnId())
-	            .variants(List.of(TnVariationUpdateDto.builder()
-	                .id(v.getId())
-	                .inventoryLevels(List.of(TnInventoryLevelsDto.builder()
-	                    .stock(v.getStock()).build()))
-	                .build()))
-	            .build()
-	    ).toList();
+	public Object updateVariant(Long productId, Long variantId, Integer stock, Tenant tenant) {
+	    String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + productId + "/variants/" + variantId;
 
-	    updateProduct(
-	        tnUpdate,
-	        tenantService.getTenantByName(product.getTennantName()),
-	        Long.valueOf(product.getVariations().get(0).getTnId()) 
-	    );
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.APPLICATION_JSON);
+	    headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
+	    headers.set("User-Agent", userAgent);
+
+	    Map<String, Object> body = Map.of("stock", stock);
+
+	    HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+	    try {
+	        ResponseEntity<Object> response = restTemplate.exchange(
+	            url,
+	            HttpMethod.PUT,
+	            requestEntity,
+	            Object.class
+	        );
+	        return response.getBody();
+
+	    } catch (Exception e) {
+	        throw new IncorrectUpdateSemanticsDataAccessException("Error al actualizar la variante: " + e.getMessage());
+	    }
+	}
+
+	public void notifyTiendaNube(Product product) {
+	    Tenant tenant = tenantService.getTenantByName(product.getTennantName());
+	    
+	    product.getVariations().stream()
+	        .filter(v -> v.getTnId() != null)
+	        .forEach(variation -> {
+	            try {
+	                updateVariant(
+	                    Long.valueOf(product.getTiendaNubeId()),
+	                    Long.valueOf(variation.getTnId()),
+	                    variation.getStock(),
+	                    tenant
+	                );
+	            } catch (Exception e) {
+	                System.err.println("Error al actualizar variante " + variation.getTnId() + ": " + e.getMessage());
+	            }
+	        });
 	}
 	
 }

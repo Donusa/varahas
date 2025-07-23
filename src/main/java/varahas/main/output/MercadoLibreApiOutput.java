@@ -121,8 +121,6 @@ public class MercadoLibreApiOutput {
 		map.add("code", code);
 		map.add("redirect_uri", "https://benedicto17.com.ar/");
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-		
-		System.out.println("id del cliente: " + clientId);
 
 		try {
 			ResponseEntity<MlTokenResponse> response = restTemplate.postForEntity(url, request, MlTokenResponse.class);
@@ -168,10 +166,8 @@ public class MercadoLibreApiOutput {
 	}
 
 	public MeliItemDto getItemData(String itemId, String tenantName) {
-		System.out.println("getItemData 177");
 		Tenant tenant = tenantService.getTenantByName(tenantName);
 		String url = "https://api.mercadolibre.com/items/" + itemId;
-		System.out.println(itemId + "--"+ tenant.getName());
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setBearerAuth(tenant.getMlAccessToken());
@@ -205,14 +201,12 @@ public class MercadoLibreApiOutput {
 	}
 
 	public MeliItemDto postProduct(MlProductRequest request, String tenantName) {
-		System.out.println("MercadoLibreApiOutput.postProduct 225");
 		Tenant tenant = tenantService.getTenantByName(tenantName);
 		String accessToken = tenant.getMlAccessToken();
 		String url = "https://api.mercadolibre.com/items";
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Authorization", "Bearer " + accessToken);
 		HttpEntity<MlProductRequest> entity = new HttpEntity<>(request, headers);
-		System.out.println("Request:" + request);
 		ResponseEntity<MeliItemDto> response = restTemplate.exchange(url, HttpMethod.POST, entity, MeliItemDto.class);
 
 		return response.getBody();
@@ -267,7 +261,6 @@ public class MercadoLibreApiOutput {
 		
 		HttpEntity<MlUpdateProductRequest> entity = new HttpEntity<>(request, headers);
 		
-		System.out.println("Request:" + request);
 		try {
 		ResponseEntity<MeliItemDto> response = restTemplate.exchange(url, HttpMethod.PUT, entity, MeliItemDto.class);
 		if("200 OK".equals(response.getStatusCode().toString())){

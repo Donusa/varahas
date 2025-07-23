@@ -27,7 +27,6 @@ public class TenantService {
 	}
 
 	public Tenant findByMlUserId(String userId) {
-		System.out.println("FindByMlUserId 30");
 		return this.tenantRepository.findByMlUserId(userId)
 				.orElseThrow(() -> new RuntimeException("Tenant not found for user_id: " + userId));
 	}
