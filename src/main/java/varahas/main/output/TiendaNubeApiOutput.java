@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import varahas.main.dto.TnAuthDto;
+import varahas.main.dto.TnStockUpdateDto;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.TnProduct;
 
@@ -138,7 +139,7 @@ public class TiendaNubeApiOutput {
 	}
 
 
-	public Object updateProduct(TnProduct productData, Tenant tenant, Long id) {
+	public Object updateProduct(List<TnStockUpdateDto> productData, Tenant tenant, Long id) {
 		String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + id;
 
 		HttpHeaders headers = new HttpHeaders();
@@ -146,7 +147,7 @@ public class TiendaNubeApiOutput {
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
 		headers.set("User-Agent", userAgent);
 
-		HttpEntity<TnProduct> requestEntity = new HttpEntity<>(productData, headers);
+		HttpEntity<List<TnStockUpdateDto>> requestEntity = new HttpEntity<>(productData, headers);
 
 		try {
 			ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.PUT, requestEntity, Object.class);

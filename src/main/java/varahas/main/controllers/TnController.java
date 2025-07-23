@@ -1,5 +1,7 @@
 package varahas.main.controllers;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import varahas.main.dto.TnStockUpdateDto;
 import varahas.main.entities.TnProduct;
 import varahas.main.output.TiendaNubeApiOutput;
 import varahas.main.services.TenantService;
@@ -88,7 +91,7 @@ public class TnController {
 	}
 	
 	@PutMapping
-	public ResponseEntity<?> updateProduct(@RequestBody TnProduct productData, @RequestParam String tenantName, @RequestParam Long id) {
+	public ResponseEntity<?> updateProduct(@RequestBody List<TnStockUpdateDto> productData, @RequestParam String tenantName, @RequestParam Long id) {
 
 		var tenant = this.tenantService.getTenantByName(tenantName);
 		if (tenant == null) {

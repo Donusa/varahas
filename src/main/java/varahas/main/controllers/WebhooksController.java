@@ -11,13 +11,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import varahas.main.configuration.ApplicationConfig;
+
 import varahas.main.dao.MlauDao;
 import varahas.main.dto.MeliItemDto;
 import varahas.main.dto.MeliVariationDto;
-import varahas.main.dto.StockUpdate;
+import varahas.main.dto.StockUpdateDto;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.Variations;
+import varahas.main.enums.SourceChannel;
 import varahas.main.output.MercadoLibreApiOutput;
 import varahas.main.output.TiendaNubeApiOutput;
 import varahas.main.services.ProductService;
@@ -27,9 +28,6 @@ import varahas.main.services.VariationService;
 @RestController
 @RequestMapping("/webhooks")
 public class WebhooksController {
-
-    private final ApplicationConfig applicationConfig;
-
 
 	@Autowired
 	private TenantService tenantService;
@@ -44,11 +42,6 @@ public class WebhooksController {
 	@Autowired
 	private ProductService productService;
 
-
-    WebhooksController(ApplicationConfig applicationConfig) {
-        this.applicationConfig = applicationConfig;
-    }
-	
 	
 	@PostMapping("/ml")
 	public ResponseEntity<Void> recibirNotificacion(@RequestBody Map<String, Object> payload) {
@@ -80,9 +73,9 @@ public class WebhooksController {
 
 	            Variations variation = optionalVar.get();
 
-	            variationService.updateStockFromWebhookMl(variation.getId(), meliStock);
+	            variationService.updateStockFromWebhook(variation.getId(), meliStock, SourceChannel.MELI);
 	            
-	            StockUpdate stockUpdate = variationService.buildStockUpdate(variation.getProduct());
+	            StockUpdateDto stockUpdate = variationService.buildStockUpdate(variation.getProduct());
 	            messagingTemplate.convertAndSend("/topic/stock", stockUpdate);
 	        }
 		} catch (Exception e) {
@@ -109,16 +102,16 @@ public class WebhooksController {
 		            return ResponseEntity.badRequest().build();
 		        }
 		      
-		        var n = tiendaNubeApiOutput.getVariants(productId, tenant);
+		        var tnVariants = tiendaNubeApiOutput.getVariants(productId, tenant);
 		        
 		        var product = productService.findByTiendaNubeId(productId); 
 		        
 		        Map<String,Integer>trackingSet = new HashMap<>();
 		        
 		        
-		        for(Map<String,Object> m : n){
+		        for(Map<String,Object> mappedVariants : tnVariants){
 		        	
-		        		String inventory = String.valueOf(m.get("inventory_levels"));
+		        		String inventory = String.valueOf(mappedVariants.get("inventory_levels"));
 		        		int beginIndex = inventory.indexOf("variant_id=")+11;
 		        		int endIndex = inventory.indexOf(",",beginIndex);
 		        		
@@ -134,29 +127,19 @@ public class WebhooksController {
 		        		trackingSet.put(variantId, Integer.valueOf(stock));
 		        }
 		        
-		        for(Variations v : product.getVariations()){
-		        	
-		        	if(trackingSet.containsKey(v.getTnId())){
-		        		int remoteStock = trackingSet.get(v.getTnId());
-		        		int localStock = v.getStock();
-		        		
-		        		if(localStock != remoteStock){
-		        			v.setStock(remoteStock);
-		        		}
-		        	}
+		        for (Variations v : product.getVariations()) {
+		            if (trackingSet.containsKey(v.getTnId())) {
+		                int remoteStock = trackingSet.get(v.getTnId());
+		                int localStock = v.getStock();
+
+		                if (localStock != remoteStock) {
+		                    variationService.updateStockFromWebhook(v.getId(), remoteStock, SourceChannel.TIENDA_NUBE);
+		                    StockUpdateDto stockUpdate = variationService.buildStockUpdate(v.getProduct());
+		                    messagingTemplate.convertAndSend("/topic/stock", stockUpdate);
+		                }
+		            }
 		        }
 		        
-		        	
-		        
-		        
-		        /*
-		        variationService.updateStockFromWebhook(variation.getId(), stockDesdeTn);
-
-		        StockUpdate stockUpdate = variationService.buildStockUpdate(variation.getProduct());
-		        messagingTemplate.convertAndSend("/topic/stock", stockUpdate);
-
-		        System.out.println("✅ Notificación de Tienda Nube procesada correctamente.");
-*/
 		        return ResponseEntity.ok().build();
 		       
 

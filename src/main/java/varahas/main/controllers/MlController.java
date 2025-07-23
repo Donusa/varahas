@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import varahas.main.dto.MeliItemDto;
-import varahas.main.dto.MlItemResponse;
-import varahas.main.dto.MlProductRequest;
-import varahas.main.dto.MlTokenResponse;
 import varahas.main.output.MercadoLibreApiOutput;
+import varahas.main.request.MlProductRequest;
+import varahas.main.response.MlItemResponse;
+import varahas.main.response.MlTokenResponse;
 
 @RestController
 @RequestMapping("/api/ml")

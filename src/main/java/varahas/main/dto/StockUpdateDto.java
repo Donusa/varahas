@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class StockUpdate {
+public class StockUpdateDto {
 
     private Long productId;
     private int totalStock;

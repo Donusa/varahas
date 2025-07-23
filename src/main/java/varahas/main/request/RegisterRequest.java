@@ -1,4 +1,4 @@
-package varahas.main.dto;
+package varahas.main.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

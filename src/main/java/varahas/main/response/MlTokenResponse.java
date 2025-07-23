@@ -1,4 +1,4 @@
-package varahas.main.dto;
+package varahas.main.response;
 
 import lombok.Data;
 

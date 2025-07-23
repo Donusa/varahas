@@ -1,8 +1,5 @@
 package varahas.main.controllers;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,14 +11,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import varahas.main.dto.MlUpdateProductRequest;
 import varahas.main.dto.ProductDTO;
-import varahas.main.dto.VariationsDTO;
 import varahas.main.entities.Product;
-import varahas.main.entities.Variations;
 import varahas.main.output.MercadoLibreApiOutput;
+import varahas.main.request.MlUpdateProductRequest;
 import varahas.main.services.AuthorizationService;
 import varahas.main.services.ProductService;
+import varahas.main.utils.MlUtils;
 
 @RestController
 @RequestMapping("/api/products")
@@ -85,7 +81,7 @@ public class ProductController {
 	
 	@PutMapping("/update")
 	public ResponseEntity<?>updateProduct(@RequestParam String tennantName, @RequestBody Product product){
-		MlUpdateProductRequest mlUpdateProductRequest = MlUpdateProductRequest.builder().variations(getVariations(product)).build();
+		MlUpdateProductRequest mlUpdateProductRequest = MlUpdateProductRequest.builder().variations(MlUtils.getVariations(product)).build();
 		Boolean state = mercadoLibreApiOutput.stockUpdate(product.getMercadoLibreId(), tennantName,mlUpdateProductRequest);
 		if(!state){
 			return ResponseEntity.badRequest().body("Product failed to update");
@@ -93,19 +89,5 @@ public class ProductController {
 		return ResponseEntity.ok("Product updated");
 	}
 	
-	public List<VariationsDTO> getVariations(Product product){
-		List<VariationsDTO> variations = new ArrayList<VariationsDTO>();
-		
-		for(Variations variation:product.getVariations()){
-			if(variation.getMeliId()!= null){
-			VariationsDTO variationDto = VariationsDTO.builder()
-					.id(variation.getMeliId())
-					.available_quantity(variation.getStock())
-					.build();
-			variations.add(variationDto);
-			}
-		}
-		
-		return variations;
-	}  
+	
 }

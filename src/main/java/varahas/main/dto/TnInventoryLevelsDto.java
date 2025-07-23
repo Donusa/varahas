@@ -1,11 +1,15 @@
 package varahas.main.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
-public class tnUpdateDto {
-	
-	private String id;
+@Builder
+@Data
+public class TnInventoryLevelsDto {
+
+	private Integer stock;
 }

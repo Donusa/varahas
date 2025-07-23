@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
-import varahas.main.dto.StockUpdate;
+import varahas.main.dto.StockUpdateDto;
 
 @Component
 public class StockNotificationService {
@@ -13,7 +13,7 @@ public class StockNotificationService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
     
-    public void sendUpdate(StockUpdate update) {
+    public void sendUpdate(StockUpdateDto update) {
         messagingTemplate.convertAndSend("/topic/stock", update);
     }
 }

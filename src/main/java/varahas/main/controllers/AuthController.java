@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import varahas.main.dto.AuthDTO;
 import varahas.main.dto.AuthRequest;
-import varahas.main.dto.RegisterRequest;
+import varahas.main.request.RegisterRequest;
 import varahas.main.services.AuthenticationService;
 import varahas.main.utils.SecurityUtils;
 

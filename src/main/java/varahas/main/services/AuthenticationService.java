@@ -20,7 +20,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import varahas.main.dto.AuthDTO;
 import varahas.main.dto.AuthRequest;
-import varahas.main.dto.RegisterRequest;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.Token;
 import varahas.main.entities.User;
@@ -30,6 +29,7 @@ import varahas.main.enums.TokenType;
 import varahas.main.repositories.TenantRepository;
 import varahas.main.repositories.TokenRepository;
 import varahas.main.repositories.UserRepository;
+import varahas.main.request.RegisterRequest;
 
 @Service
 public class AuthenticationService {
