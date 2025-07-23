@@ -50,7 +50,7 @@ public class WebhooksController {
 
 		String resource = (String) payload.get("resource");
 		String userId = String.valueOf(payload.get("user_id"));
-		MlauDao mlauDao = mercadoLibreApiOutput.findMlId(resource);
+		MlauDao mlauDao = variationService.findMlId(resource);
 		String itemId = mlauDao.getMla();
 		try {
 

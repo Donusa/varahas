@@ -21,9 +21,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import varahas.main.dto.TnAuthDto;
+import varahas.main.dto.TnInventoryLevelsDto;
 import varahas.main.dto.TnStockUpdateDto;
+import varahas.main.dto.TnVariationUpdateDto;
+import varahas.main.entities.Product;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.TnProduct;
+import varahas.main.services.TenantService;
 
 @Service
 public class TiendaNubeApiOutput {
@@ -40,6 +44,10 @@ public class TiendaNubeApiOutput {
 	@Autowired
 	private RestTemplate restTemplate;
 
+	@Autowired
+	private TenantService tenantService;
+	
+	
 	public String createProduct(TnProduct productData, Tenant tenant) {
 		if (productData == null || tenant == null) {
 			throw new IncorrectUpdateSemanticsDataAccessException("Datos del producto o tenant no pueden ser nulos");
@@ -250,6 +258,26 @@ public class TiendaNubeApiOutput {
 			System.out.println("No se pudieron obtener las variantes: " + variantException.getMessage());
 			return null;
 		}
+	}
+	
+
+	public void notifyTiendaNube(Product product) {
+	    List<TnStockUpdateDto> tnUpdate = product.getVariations().stream().map(v ->
+	        TnStockUpdateDto.builder()
+	            .tnId(v.getTnId())
+	            .variants(List.of(TnVariationUpdateDto.builder()
+	                .id(v.getId())
+	                .inventoryLevels(List.of(TnInventoryLevelsDto.builder()
+	                    .stock(v.getStock()).build()))
+	                .build()))
+	            .build()
+	    ).toList();
+
+	    updateProduct(
+	        tnUpdate,
+	        tenantService.getTenantByName(product.getTennantName()),
+	        Long.valueOf(product.getVariations().get(0).getTnId()) 
+	    );
 	}
 	
 }

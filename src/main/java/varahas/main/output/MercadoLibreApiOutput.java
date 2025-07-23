@@ -2,8 +2,6 @@ package varahas.main.output;
 
 import java.util.Date;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,20 +15,18 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import varahas.main.dao.MlauDao;
 import varahas.main.dto.AttributeResponse;
 import varahas.main.dto.CategoryResponse;
 import varahas.main.dto.MeliItemDto;
 import varahas.main.entities.Product;
 import varahas.main.entities.Tenant;
-import varahas.main.entities.Variations;
 import varahas.main.request.MlProductRequest;
 import varahas.main.request.MlUpdateProductRequest;
 import varahas.main.response.MlItemResponse;
 import varahas.main.response.MlTokenResponse;
 import varahas.main.response.MlUserItemsResponse;
 import varahas.main.services.TenantService;
-import varahas.main.services.VariationService;
+import varahas.main.utils.MlUtils;
 
 @Service
 public class MercadoLibreApiOutput {
@@ -46,9 +42,6 @@ public class MercadoLibreApiOutput {
 
 	@Autowired
 	private TenantService tenantService;
-	
-	@Autowired
-	private VariationService variationService;
 
 
 	public Boolean validateAcessToken(String tenantName) {
@@ -292,23 +285,14 @@ public class MercadoLibreApiOutput {
 	}
 	
 	
-	public MlauDao findMlId(String str){
-		
-		if(str.contains("MLAU")){
-			Pattern p = Pattern.compile("(ML[A-Z]*\\d+)(?=/|$)");
-			Matcher matcher = p.matcher(str);
-			if(matcher.find()){
-				Variations variations = variationService.findByMlau(matcher.group(1));
-				Product product = variations.getProduct();
-				
-				
-				return MlauDao.builder()
-						.mla(product.getMercadoLibreId())
-						.mlau(variations.getMlau())
-						.build();
-			}
-		}
-		throw new RuntimeException("No se encontro match");
-	}
 
+	
+	public void notifyMercadoLibre(Product product) {
+		MlUpdateProductRequest mlUpdateProductRequest = MlUpdateProductRequest.builder().variations(MlUtils.getVariations(product)).build();
+		Boolean success = stockUpdate(product.getMercadoLibreId(),product.getTennantName(),mlUpdateProductRequest);
+		if (!success) {
+			throw new RuntimeException(
+					"Failed to update stock on Mercado Libre for product: " + product.getMercadoLibreId());
+		}
+	}
 }

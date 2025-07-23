@@ -3,15 +3,15 @@ package varahas.main.services;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
+import varahas.main.dao.MlauDao;
 import varahas.main.dto.StockUpdateDto;
-import varahas.main.dto.TnInventoryLevelsDto;
-import varahas.main.dto.TnStockUpdateDto;
-import varahas.main.dto.TnVariationUpdateDto;
 import varahas.main.entities.Product;
 import varahas.main.entities.Variations;
 import varahas.main.enums.SourceChannel;
@@ -19,8 +19,6 @@ import varahas.main.output.MercadoLibreApiOutput;
 import varahas.main.output.TiendaNubeApiOutput;
 import varahas.main.repositories.ProductRepository;
 import varahas.main.repositories.VariationRepository;
-import varahas.main.request.MlUpdateProductRequest;
-import varahas.main.utils.MlUtils;
 
 @Service
 public class VariationService {
@@ -37,11 +35,6 @@ public class VariationService {
 	@Autowired
 	private TiendaNubeApiOutput tiendaNubeApiOutput;
 
-	@Autowired
-	private TenantService tenantService;
-
-	
-	
 	@Transactional
 	public void updateStockFromWebhook(Long variationId, int newRemoteStock, SourceChannel sourceChannel) {
 		Variations variation = variationRepository.findByIdForUpdate(variationId)
@@ -61,42 +54,11 @@ public class VariationService {
 	        productRepository.save(product);
 
 	        switch (sourceChannel) {
-	            case MELI -> notifyTiendaNube(product);
-	            case TIENDA_NUBE -> notifyMercadoLibre(product);
+	            case MELI -> tiendaNubeApiOutput.notifyTiendaNube(product);
+	            case TIENDA_NUBE -> mercadoLibreApiOutput.notifyMercadoLibre(product);
 	        }
 	    }
 	}
-
-	private void notifyMercadoLibre(Product product) {
-		MlUpdateProductRequest mlUpdateProductRequest = MlUpdateProductRequest.builder().variations(MlUtils.getVariations(product)).build();
-		Boolean success = mercadoLibreApiOutput.stockUpdate(product.getMercadoLibreId(),product.getTennantName(),mlUpdateProductRequest);
-		if (!success) {
-			throw new RuntimeException(
-					"Failed to update stock on Mercado Libre for product: " + product.getMercadoLibreId());
-		}
-	}
-
-	private void notifyTiendaNube(Product product) {
-	    List<TnStockUpdateDto> tnUpdate = product.getVariations().stream().map(v ->
-	        TnStockUpdateDto.builder()
-	            .tnId(v.getTnId())
-	            .variants(List.of(TnVariationUpdateDto.builder()
-	                .id(v.getId())
-	                .inventoryLevels(List.of(TnInventoryLevelsDto.builder()
-	                    .stock(v.getStock()).build()))
-	                .build()))
-	            .build()
-	    ).toList();
-
-	    tiendaNubeApiOutput.updateProduct(
-	        tnUpdate,
-	        tenantService.getTenantByName(product.getTennantName()),
-	        Long.valueOf(product.getVariations().get(0).getTnId()) 
-	    );
-	}
-	
-	
-	
 	
 	public Optional<Variations> getByMeliId(String meliId) {
 		return variationRepository.findByMeliId(meliId);
@@ -128,4 +90,24 @@ public class VariationService {
 		return variationRepository.findByMlau(mlau);
 	}
 
+
+	public MlauDao findMlId(String str){
+		
+		if(str.contains("MLAU")){
+			Pattern p = Pattern.compile("(ML[A-Z]*\\d+)(?=/|$)");
+			Matcher matcher = p.matcher(str);
+			if(matcher.find()){
+				Variations variations = findByMlau(matcher.group(1));
+				Product product = variations.getProduct();
+				
+				
+				return MlauDao.builder()
+						.mla(product.getMercadoLibreId())
+						.mlau(variations.getMlau())
+						.build();
+			}
+		}
+		throw new RuntimeException("No se encontro match");
+	}
+	
 }
