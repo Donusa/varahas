@@ -26,15 +26,21 @@ import varahas.main.response.MlItemResponse;
 import varahas.main.response.MlTokenResponse;
 import varahas.main.response.MlUserItemsResponse;
 import varahas.main.services.TenantService;
+import varahas.main.services.TokenSchedulerService;
 import varahas.main.utils.MlUtils;
 
 @Service
 public class MercadoLibreApiOutput {
 
-	@Value("${mercadolibre.client.id:7214647968735209}")
+	private final String MELI_BASE_URL = "https://api.mercadolibre.com";
+	
+	@Value("${mercadolibre.redirect.uri}")
+	private String REDIRECT_URI;
+	
+	@Value("${mercadolibre.client.id}")
 	private String clientId;
 
-	@Value("${mercadolibre.client.secret:yivdPpntv5NH523KUhpyKqUltP6lWrAq}")
+	@Value("${mercadolibre.client.secret}")
 	private String clientSecret;
 
 	@Autowired
@@ -43,6 +49,8 @@ public class MercadoLibreApiOutput {
 	@Autowired
 	private TenantService tenantService;
 
+	@Autowired
+	private TokenSchedulerService schedulerService;
 
 	public Boolean validateAcessToken(String tenantName) {
 		Tenant tenant = tenantService.getTenantByName(tenantName);
@@ -68,7 +76,7 @@ public class MercadoLibreApiOutput {
 		if (refreshToken == null || refreshToken.isEmpty()) {
 			throw new RuntimeException("Refresh token no encontrado para el tenant: " + tenantName);
 		}
-		String url = "https://api.mercadolibre.com/oauth/token";
+		String url =  MELI_BASE_URL+"/oauth/token";
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -109,7 +117,7 @@ public class MercadoLibreApiOutput {
 		} catch (Exception e) {
 			throw new RuntimeException("Tenant no encontrado: " + tenantName);
 		}
-		String url = "https://api.mercadolibre.com/oauth/token";
+		String url =  MELI_BASE_URL+"/oauth/token";
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -119,7 +127,7 @@ public class MercadoLibreApiOutput {
 		map.add("client_id", clientId);
 		map.add("client_secret", clientSecret);
 		map.add("code", code);
-		map.add("redirect_uri", "https://benedicto17.com.ar/");
+		map.add("redirect_uri", REDIRECT_URI);
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
 		try {
@@ -134,6 +142,8 @@ public class MercadoLibreApiOutput {
 				tenant.setMlAccessTokenExpirationDate(
 					    new Date(System.currentTimeMillis() + 3 * 60 * 60 * 1000L));
 				tenantService.save(tenant);
+
+	            schedulerService.programarRenovacionTokenMl(tenant);
 				return tokenResponse;
 			} else {
 				System.out.println("Error: Token response is null");
@@ -150,7 +160,7 @@ public class MercadoLibreApiOutput {
 
 	public List<String> getAllItemsForUser(String tenantName) {
 		Tenant tenant = tenantService.getTenantByName(tenantName);
-		String url = "https://api.mercadolibre.com/users/" + tenant.getMlUserId() + "/items/search";
+		String url =  MELI_BASE_URL+"/users/" + tenant.getMlUserId() + "/items/search";
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -167,7 +177,7 @@ public class MercadoLibreApiOutput {
 
 	public MeliItemDto getItemData(String itemId, String tenantName) {
 		Tenant tenant = tenantService.getTenantByName(tenantName);
-		String url = "https://api.mercadolibre.com/items/" + itemId;
+		String url =  MELI_BASE_URL+"/items/" + itemId;
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setBearerAuth(tenant.getMlAccessToken());
@@ -186,7 +196,7 @@ public class MercadoLibreApiOutput {
 
 	public MlItemResponse getCurrentMELIStock(String meliId, String tenantName) {
 		Tenant tenant = tenantService.getTenantByName(tenantName);
-		String url = "https://api.mercadolibre.com/items/" + meliId;
+		String url =  MELI_BASE_URL+"/items/" + meliId;
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -203,7 +213,7 @@ public class MercadoLibreApiOutput {
 	public MeliItemDto postProduct(MlProductRequest request, String tenantName) {
 		Tenant tenant = tenantService.getTenantByName(tenantName);
 		String accessToken = tenant.getMlAccessToken();
-		String url = "https://api.mercadolibre.com/items";
+		String url =  MELI_BASE_URL+"/items";
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Authorization", "Bearer " + accessToken);
 		HttpEntity<MlProductRequest> entity = new HttpEntity<>(request, headers);
@@ -213,7 +223,7 @@ public class MercadoLibreApiOutput {
 	}
 
 	public CategoryResponse[] getCategories(String siteId, String tenantName) {
-		String url = "https://api.mercadolibre.com/sites/MLA/categories";
+		String url =  MELI_BASE_URL+"/sites/MLA/categories";
 		
 		Tenant tenant = tenantService.getTenantByName(tenantName);
 		
@@ -229,7 +239,7 @@ public class MercadoLibreApiOutput {
 	}
 	
 	public AttributeResponse[] getCategoryAttributes(String tenantName, String categoryId) {
-	    String url = "https://api.mercadolibre.com/categories/" + categoryId + "/attributes";
+	    String url =  MELI_BASE_URL+"/categories/" + categoryId + "/attributes";
 
 		Tenant tenant = tenantService.getTenantByName(tenantName);
 		
@@ -250,7 +260,7 @@ public class MercadoLibreApiOutput {
 	}
 	
 	public Boolean stockUpdate(String itemId,String tenantName,MlUpdateProductRequest request){
-		String url = "https://api.mercadolibre.com/items/"+itemId;
+		String url =  MELI_BASE_URL+"/items/"+itemId;
 		
 		Tenant tenant = tenantService.getTenantByName(tenantName);
 		
@@ -262,13 +272,12 @@ public class MercadoLibreApiOutput {
 		HttpEntity<MlUpdateProductRequest> entity = new HttpEntity<>(request, headers);
 		
 		try {
-		ResponseEntity<MeliItemDto> response = restTemplate.exchange(url, HttpMethod.PUT, entity, MeliItemDto.class);
-		if("200 OK".equals(response.getStatusCode().toString())){
-			return true;
-		}
-		
-		return false;
-		
+		return "200 OK".equals(
+				restTemplate
+					.exchange(url, HttpMethod.PUT, entity, MeliItemDto.class)
+					.getStatusCode()
+					.toString()
+				);
 		
 		}catch (Exception e){
 			System.out.println(e.getMessage());
@@ -277,15 +286,28 @@ public class MercadoLibreApiOutput {
 		
 	}
 	
-	
-
-	
 	public void notifyMercadoLibre(Product product) {
 		MlUpdateProductRequest mlUpdateProductRequest = MlUpdateProductRequest.builder().variations(MlUtils.getVariations(product)).build();
 		Boolean success = stockUpdate(product.getMercadoLibreId(),product.getTennantName(),mlUpdateProductRequest);
 		if (!success) {
 			throw new RuntimeException(
 					"Failed to update stock on Mercado Libre for product: " + product.getMercadoLibreId());
+		}
+	}
+	
+
+	public void renewMlToken(Long tenantId) {
+		
+		try {
+			Tenant tenant = tenantService.findById(tenantId);
+			MlTokenResponse mlTokenResponse = getAccessToken(tenant.getName());
+			if (mlTokenResponse == null || mlTokenResponse.access_token == null) {
+				throw new RuntimeException("No se pudo obtener el token de acceso de Mercado Libre");
+			}
+			schedulerService.programarRenovacionTokenMl(tenant);
+		} catch (Exception e) {
+			System.out.println("Error al programar renovación de token ML: " + e.getMessage());
+			System.out.println(e.getMessage());
 		}
 	}
 }

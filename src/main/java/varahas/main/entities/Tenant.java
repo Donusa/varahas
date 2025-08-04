@@ -41,12 +41,17 @@ public class Tenant {
 	private String mlUserId;
 	@Column(unique = true, nullable = true)
 	private String TiendaNubeAccessToken;
+	@Column(unique = true, nullable = true)
+	private Long TiendaNubeUserId;
 	@Column(nullable = true)
 	private String mlAccessToken;
 	@Column(nullable = true)
 	private Date mlAccessTokenExpirationDate;
 	@Column(nullable = true)
 	private String mlRefreshToken;
+	@Builder.Default
+	@Column(nullable = true)
+	private Boolean mlTokenJobProgrammed = false;
 	@Column(nullable = true)
 	private String tnUserId;
 	@Override

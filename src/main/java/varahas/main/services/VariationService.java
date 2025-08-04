@@ -13,12 +13,21 @@ import jakarta.transaction.Transactional;
 import varahas.main.dao.MlauDao;
 import varahas.main.dto.StockUpdateDto;
 import varahas.main.entities.Product;
+import varahas.main.entities.Tenant;
 import varahas.main.entities.Variations;
 import varahas.main.enums.SourceChannel;
 import varahas.main.output.MercadoLibreApiOutput;
 import varahas.main.output.TiendaNubeApiOutput;
+import varahas.main.queue.StockUpdateQueueHandler;
 import varahas.main.repositories.ProductRepository;
 import varahas.main.repositories.VariationRepository;
+import varahas.main.request.MlUpdateProductRequest;
+import varahas.main.notifications.StockNotificationService;
+import varahas.main.response.MlItemResponse;
+import varahas.main.dto.MeliVariationDto;
+import varahas.main.dto.MeliItemDto;
+import varahas.main.dto.VariationsDTO;
+import java.util.Map;
 
 @Service
 public class VariationService {
@@ -30,10 +39,16 @@ public class VariationService {
 	private ProductRepository productRepository;
 
 	@Autowired
+	private TenantService tenantService;
+	
+	@Autowired
 	private MercadoLibreApiOutput mercadoLibreApiOutput;
 
 	@Autowired
 	private TiendaNubeApiOutput tiendaNubeApiOutput;
+
+	@Autowired
+	private StockNotificationService stockNotificationService;
 
 	@Transactional
 	public void updateStockFromWebhook(Long variationId, int newRemoteStock, SourceChannel sourceChannel) {
@@ -108,4 +123,144 @@ public class VariationService {
 		throw new RuntimeException("No se encontro match");
 	}
 	
+	@Transactional
+	public void processStockDelta(StockUpdateQueueHandler.StockUpdateEvent event) {
+		Long variationId = event.variationId();
+		int newRemoteStock = event.stock();
+		SourceChannel source = event.source();
+
+		try {
+			Variations variation = variationRepository.findById(variationId)
+				.orElseThrow(() -> new RuntimeException("Variation no encontrada: " + variationId));
+
+			Product product = variation.getProduct();
+			Tenant tenant = tenantService.getTenantByName(product.getTennantName());
+			
+			System.out.println("🔄 Procesando delta de stock para variación: " + variationId + ", fuente: " + source);
+
+			Integer meliCurrentStock = null;
+			Integer tnCurrentStock = null;
+
+			if (variation.getMeliId() != null && !variation.getMeliId().isEmpty()) {
+				try {
+					MlItemResponse mlItemResponse = mercadoLibreApiOutput.getCurrentMELIStock(product.getMercadoLibreId(), tenant.getName());
+					if (mlItemResponse != null) {
+						meliCurrentStock = mlItemResponse.getAvailable_quantity();
+						
+						MeliItemDto meliItemDto = mercadoLibreApiOutput.getItemData(product.getMercadoLibreId(), tenant.getName());
+						if (meliItemDto != null && meliItemDto.getVariations() != null) {
+							for (MeliVariationDto mlVar : meliItemDto.getVariations()) {
+								if (variation.getMeliId().equals(String.valueOf(mlVar.getId()))) {
+									meliCurrentStock = mlVar.getAvailableQuantity();
+									break;
+								}
+							}
+						}
+					}
+				} catch (Exception e) {
+					System.err.println("Error obteniendo stock de MELI: " + e.getMessage());
+				}
+			}
+
+			if (variation.getTnId() != null && !variation.getTnId().isEmpty()) {
+				try {
+					var tnVariants = tiendaNubeApiOutput.getVariants(product.getTiendaNubeId(), tenant);
+					if (tnVariants != null) {
+						for (Map<String, Object> tnVar : tnVariants) {
+							if (variation.getTnId().equals(String.valueOf(tnVar.get("id")))) {
+								tnCurrentStock = (Integer) tnVar.get("stock");
+								break;
+							}
+						}
+					}
+				} catch (Exception e) {
+					System.err.println("Error obteniendo stock de TN: " + e.getMessage());
+				}
+			}
+
+			int currentLocalStock = variation.getStock();
+			int meliDelta = 0;
+			int tnDelta = 0;
+
+			if (meliCurrentStock != null) {
+				meliDelta = currentLocalStock - meliCurrentStock;
+			}
+			if (tnCurrentStock != null) {
+				tnDelta = currentLocalStock - tnCurrentStock;
+			}
+
+			int totalDelta = meliDelta + tnDelta;
+			
+			if (source == SourceChannel.MELI && meliCurrentStock != null) {
+				totalDelta = (currentLocalStock - meliCurrentStock) + (currentLocalStock - (tnCurrentStock != null ? tnCurrentStock : currentLocalStock));
+				int stockChange = newRemoteStock - meliCurrentStock;
+				currentLocalStock += stockChange;
+			}
+			else if (source == SourceChannel.TIENDA_NUBE && tnCurrentStock != null) {
+				totalDelta = (currentLocalStock - (meliCurrentStock != null ? meliCurrentStock : currentLocalStock)) + (currentLocalStock - tnCurrentStock);
+				int stockChange = newRemoteStock - tnCurrentStock;
+				currentLocalStock += stockChange;
+			}
+
+			System.out.println("📊 Stock actual local: " + variation.getStock() + ", MELI: " + meliCurrentStock + ", TN: " + tnCurrentStock);
+			System.out.println("📈 Delta MELI: " + meliDelta + ", Delta TN: " + tnDelta + ", Delta total: " + totalDelta);
+			System.out.println("🎯 Nuevo stock local calculado: " + currentLocalStock);
+
+			variation.setStock(currentLocalStock);
+			variationRepository.save(variation);
+
+			int totalProductStock = product.getVariations().stream().mapToInt(Variations::getStock).sum();
+			product.setStock(totalProductStock);
+			productRepository.save(product);
+
+			if (variation.getMeliId() != null && !variation.getMeliId().isEmpty()) {
+				try {
+					MlUpdateProductRequest mlRequest = new MlUpdateProductRequest();
+					
+					// Crear una variación con el stock actualizado
+					VariationsDTO variationDTO = new VariationsDTO();
+					variationDTO.setId(variation.getMeliId());
+					variationDTO.setAvailable_quantity(currentLocalStock);
+					
+					mlRequest.setVariations(List.of(variationDTO));
+					
+					boolean mlSuccess = mercadoLibreApiOutput.stockUpdate(product.getMercadoLibreId(), tenant.getName(), mlRequest);
+					if (mlSuccess) {
+						System.out.println("✅ Stock actualizado en MELI: " + currentLocalStock);
+					} else {
+						System.err.println("❌ Error actualizando stock en MELI");
+					}
+				} catch (Exception e) {
+					System.err.println("❌ Error actualizando MELI: " + e.getMessage());
+				}
+			}
+
+			// Actualizar Tienda Nube
+			if (variation.getTnId() != null && !variation.getTnId().isEmpty()) {
+				try {
+					tiendaNubeApiOutput.updateVariant(
+						Long.valueOf(product.getTiendaNubeId()),
+						Long.valueOf(variation.getTnId()),
+						currentLocalStock,
+						tenant
+					);
+					System.out.println("✅ Stock actualizado en TN: " + currentLocalStock);
+				} catch (Exception e) {
+					System.err.println("❌ Error actualizando TN: " + e.getMessage());
+				}
+			}
+
+			try {
+				StockUpdateDto stockUpdate = buildStockUpdate(product);
+				stockNotificationService.sendUpdate(stockUpdate);
+				System.out.println("📢 Notificación de stock enviada");
+			} catch (Exception e) {
+				System.err.println("❌ Error enviando notificación: " + e.getMessage());
+			}
+
+		} catch (Exception e) {
+			System.err.println("❌ Error procesando delta de stock: " + e.getMessage());
+			throw new RuntimeException("Error procesando delta de stock", e);
+		}
+	}
 }
