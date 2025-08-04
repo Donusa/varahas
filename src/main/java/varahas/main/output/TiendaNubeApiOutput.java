@@ -40,9 +40,6 @@ public class TiendaNubeApiOutput {
 	
 	@Value("${varahas.tn.api.agent}")
 	private String userAgent;
-	
-	@Value("${varahas.tn.api.id:6345992}")
-    private String apiId;
 
 	@Autowired
 	private RestTemplate restTemplate;
@@ -56,7 +53,7 @@ public class TiendaNubeApiOutput {
 			throw new IncorrectUpdateSemanticsDataAccessException("Datos del producto o tenant no pueden ser nulos");
 		}
 		
-		String url = TN_BASE_URL + apiId + "/products";
+		String url = TN_BASE_URL + tenant.getTnUserId() + "/products";
 		
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -79,7 +76,7 @@ public class TiendaNubeApiOutput {
 		if (tenant == null) {
 			throw new IncorrectUpdateSemanticsDataAccessException("Tenant no puede ser nulo");
 		}
-		String url = TN_BASE_URL + apiId + "/products";
+		String url = TN_BASE_URL + tenant.getTnUserId() + "/products";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
@@ -111,7 +108,7 @@ public class TiendaNubeApiOutput {
 			throw new IncorrectUpdateSemanticsDataAccessException("ID del producto o tenant no pueden ser nulos");
 		}
 
-		String url = TN_BASE_URL + apiId + "/products/" + itemId;
+		String url = TN_BASE_URL + tenant.getTnUserId() + "/products/" + itemId;
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -137,7 +134,7 @@ public class TiendaNubeApiOutput {
 
 
 	public Object updateProduct(Long productId, List<TnVariationUpdateDto> variants, Tenant tenant) {
-	    String url = TN_BASE_URL + apiId + "/products/" + productId;
+	    String url = TN_BASE_URL + tenant.getTnUserId() + "/products/" + productId;
 
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.setContentType(MediaType.APPLICATION_JSON);
@@ -169,7 +166,7 @@ public class TiendaNubeApiOutput {
 			throw new IncorrectUpdateSemanticsDataAccessException("Tenant no puede ser nulo");
 		}
 
-		String url = TN_BASE_URL + apiId + "/categories";
+		String url = TN_BASE_URL + tenant.getTnUserId() + "/categories";
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -233,7 +230,7 @@ public class TiendaNubeApiOutput {
 			throw new IncorrectUpdateSemanticsDataAccessException("ID del producto o tenant no pueden ser nulos");
 		}
 		
-		String variantsUrl = TN_BASE_URL + apiId + "/products/" + itemId + "/variants";
+		String variantsUrl = TN_BASE_URL + tenant.getTnUserId() + "/products/" + itemId + "/variants";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
@@ -255,7 +252,7 @@ public class TiendaNubeApiOutput {
 	
 
 	public Object updateVariant(Long productId, Long variantId, Integer stock, Tenant tenant) {
-	    String url = TN_BASE_URL + apiId + "/products/" + productId + "/variants/" + variantId;
+	    String url = TN_BASE_URL + tenant.getTnUserId() + "/products/" + productId + "/variants/" + variantId;
 
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.setContentType(MediaType.APPLICATION_JSON);
