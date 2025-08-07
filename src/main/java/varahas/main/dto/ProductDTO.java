@@ -22,6 +22,7 @@ public class ProductDTO {
 	private BigDecimal price;
 	private Integer stock;
 	private String mercadoLibreId;
+	private String tiendaNubeId;
 	private byte isOnMercadoLibre;
 	private byte isOnTiendaNube;
 	private List<Variations> variations;

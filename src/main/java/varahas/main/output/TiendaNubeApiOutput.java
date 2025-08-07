@@ -37,9 +37,6 @@ public class TiendaNubeApiOutput {
 	
 	@Value("${varahas.tn.api.client-id}")
 	private String clientId;
-	
-	@Value("${varahas.tn.api.agent}")
-	private String userAgent;
 
 	@Autowired
 	private RestTemplate restTemplate;
@@ -58,7 +55,6 @@ public class TiendaNubeApiOutput {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
 		
 		HttpEntity<TnProduct> requestEntity = new HttpEntity<>(productData, headers);
 		
@@ -80,7 +76,6 @@ public class TiendaNubeApiOutput {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
 		
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 		
@@ -113,7 +108,6 @@ public class TiendaNubeApiOutput {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
 
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 		
@@ -139,7 +133,6 @@ public class TiendaNubeApiOutput {
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.setContentType(MediaType.APPLICATION_JSON);
 	    headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-	    headers.set("User-Agent", userAgent);
 
 	    Map<String, Object> body = Map.of("variants", variants);
 
@@ -171,7 +164,6 @@ public class TiendaNubeApiOutput {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
 
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 
@@ -215,7 +207,6 @@ public class TiendaNubeApiOutput {
 	        ObjectMapper objectMapper = new ObjectMapper();
 	        TnAuthDto dto = objectMapper.readValue(response.getBody(), TnAuthDto.class);
 	        Tenant tenant = tenantService.getTenantByName(tenantName);
-	        tenant.setTiendaNubeUserId(dto.getUserId());
 	        tenantService.save(tenant);
 	        return dto;
 	    } catch (Exception e) {
@@ -234,7 +225,6 @@ public class TiendaNubeApiOutput {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 		
 		try {
@@ -257,7 +247,6 @@ public class TiendaNubeApiOutput {
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.setContentType(MediaType.APPLICATION_JSON);
 	    headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-	    headers.set("User-Agent", userAgent);
 
 	    Map<String, Object> body = Map.of("stock", stock);
 

@@ -52,13 +52,14 @@ public class ProductController {
 		if (!authorized) {
             return ResponseEntity.badRequest().body("User not authorized to access tennant");
 		}
-		Product prod = Product.builder().id(product.getId()).name(product.getName())
+		Product prod = Product.builder().name(product.getName())
 				.description(product.getDescription()).price(product.getPrice()).stock(product.getStock())
 				.mercadoLibreId(product.getMercadoLibreId()).isOnMercadoLibre(product.getIsOnMercadoLibre())
-				.isOnTiendaNube(product.getIsOnTiendaNube()).tennantName(tennantName).build();
+				.isOnTiendaNube(product.getIsOnTiendaNube()).tennantName(tennantName).tiendaNubeId(product.getTiendaNubeId()).build();
 			productService.saveProduct(prod);
 			return ResponseEntity.ok("Product saved");
 	}
+
 
 	@DeleteMapping("/delete")
 	public ResponseEntity<?> deleteProduct(@RequestParam String tennantName, @RequestParam Long id) {
@@ -76,16 +77,40 @@ public class ProductController {
 		if (!authorized) {
             return ResponseEntity.badRequest().body("User not authorized to access tennant");
 		}
-		return ResponseEntity.ok(productService.getProduct(id));
+		return ResponseEntity.ok(productService.getProductById(id));
 	}
 	
 	@PutMapping("/update")
-	public ResponseEntity<?>updateProduct(@RequestParam String tennantName, @RequestBody Product product){
-		MlUpdateProductRequest mlUpdateProductRequest = MlUpdateProductRequest.builder().variations(MlUtils.getVariations(product)).build();
-		Boolean state = mercadoLibreApiOutput.stockUpdate(product.getMercadoLibreId(), tennantName,mlUpdateProductRequest);
-		if(!state){
-			return ResponseEntity.badRequest().body("Product failed to update");
+	public ResponseEntity<?>updateProduct(@RequestParam String tennantName,@RequestBody Product product){
+		Product p = productService.getProductById(product.getId());
+		if(p == null){
+			return ResponseEntity.badRequest().body("Product not found");
 		}
+		Product aux = p.builder()
+				.id(product.getId())
+				.name(product.getName())
+				.description(product.getDescription())
+				.price(product.getPrice())
+				.stock(product.getStock())
+				.mercadoLibreId(product.getMercadoLibreId() == null?null:product.getMercadoLibreId())
+				.tiendaNubeId(product.getTiendaNubeId() == null?null:product.getTiendaNubeId())
+				.tennantName(product.getTennantName())
+				.isOnMercadoLibre(product.getIsOnMercadoLibre())
+				.isOnTiendaNube(product.getIsOnTiendaNube())
+				.variations((product.getVariations() == null || product.getVariations().isEmpty())?null:product.getVariations())
+				.build();
+		
+		productService.saveProduct(aux);
+		
+		if(aux.getIsOnTiendaNube() == 1){
+			System.out.println("Esta en Tienda Nube");
+		}
+		
+		if(aux.getIsOnMercadoLibre() == 1){
+			System.out.println("Esta en Mercado Libre");
+		}
+		
+			
 		return ResponseEntity.ok("Product updated");
 	}
 	

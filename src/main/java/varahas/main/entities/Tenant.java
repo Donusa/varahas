@@ -41,8 +41,6 @@ public class Tenant {
 	private String mlUserId;
 	@Column(unique = true, nullable = true)
 	private String TiendaNubeAccessToken;
-	@Column(unique = true, nullable = true)
-	private Long TiendaNubeUserId;
 	@Column(nullable = true)
 	private String mlAccessToken;
 	@Column(nullable = true)
