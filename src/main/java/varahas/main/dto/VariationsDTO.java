@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class VariationsDTO {
 	
-		private String id;
+		private Long id;
 		private Integer available_quantity;
 	
 }

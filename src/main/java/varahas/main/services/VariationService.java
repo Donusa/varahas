@@ -1,6 +1,8 @@
 package varahas.main.services;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -11,23 +13,22 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import varahas.main.dao.MlauDao;
+import varahas.main.dto.MeliItemDto;
+import varahas.main.dto.MeliVariationDto;
 import varahas.main.dto.StockUpdateDto;
+import varahas.main.dto.VariationsDTO;
 import varahas.main.entities.Product;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.Variations;
 import varahas.main.enums.SourceChannel;
+import varahas.main.notifications.StockNotificationService;
 import varahas.main.output.MercadoLibreApiOutput;
 import varahas.main.output.TiendaNubeApiOutput;
 import varahas.main.queue.StockUpdateQueueHandler;
 import varahas.main.repositories.ProductRepository;
 import varahas.main.repositories.VariationRepository;
 import varahas.main.request.MlUpdateProductRequest;
-import varahas.main.notifications.StockNotificationService;
 import varahas.main.response.MlItemResponse;
-import varahas.main.dto.MeliVariationDto;
-import varahas.main.dto.MeliItemDto;
-import varahas.main.dto.VariationsDTO;
-import java.util.Map;
 
 @Service
 public class VariationService {
@@ -40,7 +41,7 @@ public class VariationService {
 
 	@Autowired
 	private TenantService tenantService;
-	
+
 	@Autowired
 	private MercadoLibreApiOutput mercadoLibreApiOutput;
 
@@ -53,29 +54,29 @@ public class VariationService {
 	@Transactional
 	public void updateStockFromWebhook(Long variationId, int newRemoteStock, SourceChannel sourceChannel) {
 		Variations variation = variationRepository.findByIdForUpdate(variationId)
-	            .orElseThrow(() -> new IllegalArgumentException("Variation not found"));
+				.orElseThrow(() -> new IllegalArgumentException("Variation not found"));
 
-	    Product product = variation.getProduct();
-	    if (product == null) {
-	        throw new IllegalArgumentException("Product not found for variation");
-	    }
+		Product product = variation.getProduct();
+		if (product == null) {
+			throw new IllegalArgumentException("Product not found for variation");
+		}
 
-	    if (!Objects.equals(variation.getStock(), newRemoteStock)) {
-	        variation.setStock(newRemoteStock);
-	        variationRepository.save(variation);
+		if (!Objects.equals(variation.getStock(), newRemoteStock)) {
+			variation.setStock(newRemoteStock);
+			variationRepository.save(variation);
 
-	        int totalStock = product.getVariations().stream().mapToInt(Variations::getStock).sum();
-	        product.setStock(totalStock);
-	        productRepository.save(product);
+			int totalStock = product.getVariations().stream().mapToInt(Variations::getStock).sum();
+			product.setStock(totalStock);
+			productRepository.save(product);
 
-	        switch (sourceChannel) {
-	            case MELI -> tiendaNubeApiOutput.notifyTiendaNube(product);
-	            case TIENDA_NUBE -> mercadoLibreApiOutput.notifyMercadoLibre(product);
-	        }
-	    }
+			switch (sourceChannel) {
+			case MELI -> tiendaNubeApiOutput.notifyTiendaNube(product);
+			case TIENDA_NUBE -> mercadoLibreApiOutput.notifyMercadoLibre(product);
+			}
+		}
 	}
-	
-	public Optional<Variations> getByMeliId(String meliId) {
+
+	public Optional<Variations> getByMeliId(Long meliId) {
 		return variationRepository.findByMeliId(meliId);
 	}
 
@@ -103,26 +104,21 @@ public class VariationService {
 		return variationRepository.findByMlau(mlau);
 	}
 
+	public MlauDao findMlId(String str) {
 
-	public MlauDao findMlId(String str){
-		
-		if(str.contains("MLAU")){
+		if (str.contains("MLAU")) {
 			Pattern p = Pattern.compile("(ML[A-Z]*\\d+)(?=/|$)");
 			Matcher matcher = p.matcher(str);
-			if(matcher.find()){
+			if (matcher.find()) {
 				Variations variations = findByMlau(matcher.group(1));
 				Product product = variations.getProduct();
-				
-				
-				return MlauDao.builder()
-						.mla(product.getMercadoLibreId())
-						.mlau(variations.getMlau())
-						.build();
+
+				return MlauDao.builder().mla(product.getMercadoLibreId()).mlau(variations.getMlau()).build();
 			}
 		}
 		throw new RuntimeException("No se encontro match");
 	}
-	
+
 	@Transactional
 	public void processStockDelta(StockUpdateQueueHandler.StockUpdateEvent event) {
 		Long variationId = event.variationId();
@@ -131,35 +127,39 @@ public class VariationService {
 
 		try {
 			Variations variation = variationRepository.findById(variationId)
-				.orElseThrow(() -> new RuntimeException("Variation no encontrada: " + variationId));
+					.orElseThrow(() -> new RuntimeException("Variation no encontrada: " + variationId));
 
 			Product product = variation.getProduct();
 			Tenant tenant = tenantService.getTenantByName(product.getTennantName());
-			
+
 			System.out.println("🔄 Procesando delta de stock para variación: " + variationId + ", fuente: " + source);
 
 			Integer meliCurrentStock = null;
 			Integer tnCurrentStock = null;
-
-			if (variation.getMeliId() != null && !variation.getMeliId().isEmpty()) {
-				try {
-					MlItemResponse mlItemResponse = mercadoLibreApiOutput.getCurrentMELIStock(product.getMercadoLibreId(), tenant.getName());
+			MeliItemDto meliItemDto = null;
+			
+			try {
+				meliItemDto = mercadoLibreApiOutput.getItemData(product.getMercadoLibreId(),
+						tenant.getName());
+				if (variation.getMeliId() != null) {
+					MlItemResponse mlItemResponse = mercadoLibreApiOutput
+							.getCurrentMELIStock(product.getMercadoLibreId(), tenant.getName());
 					if (mlItemResponse != null) {
-						meliCurrentStock = mlItemResponse.getAvailable_quantity();
-						
-						MeliItemDto meliItemDto = mercadoLibreApiOutput.getItemData(product.getMercadoLibreId(), tenant.getName());
+						// meliCurrentStock = mlItemResponse.getAvailable_quantity();
+
 						if (meliItemDto != null && meliItemDto.getVariations() != null) {
 							for (MeliVariationDto mlVar : meliItemDto.getVariations()) {
-								if (variation.getMeliId().equals(String.valueOf(mlVar.getId()))) {
+								if (variation.getMeliId().equals(mlVar.getId())) {
 									meliCurrentStock = mlVar.getAvailableQuantity();
 									break;
 								}
 							}
 						}
 					}
-				} catch (Exception e) {
-					System.err.println("Error obteniendo stock de MELI: " + e.getMessage());
 				}
+			} catch (Exception e) {
+				System.err.println("Error obteniendo stock de MELI: " + e.getMessage());
+
 			}
 
 			if (variation.getTnId() != null && !variation.getTnId().isEmpty()) {
@@ -190,20 +190,13 @@ public class VariationService {
 			}
 
 			int totalDelta = meliDelta + tnDelta;
-			
-			if (source == SourceChannel.MELI && meliCurrentStock != null) {
-				totalDelta = (currentLocalStock - meliCurrentStock) + (currentLocalStock - (tnCurrentStock != null ? tnCurrentStock : currentLocalStock));
-				int stockChange = newRemoteStock - meliCurrentStock;
-				currentLocalStock += stockChange;
-			}
-			else if (source == SourceChannel.TIENDA_NUBE && tnCurrentStock != null) {
-				totalDelta = (currentLocalStock - (meliCurrentStock != null ? meliCurrentStock : currentLocalStock)) + (currentLocalStock - tnCurrentStock);
-				int stockChange = newRemoteStock - tnCurrentStock;
-				currentLocalStock += stockChange;
-			}
 
-			System.out.println("📊 Stock actual local: " + variation.getStock() + ", MELI: " + meliCurrentStock + ", TN: " + tnCurrentStock);
-			System.out.println("📈 Delta MELI: " + meliDelta + ", Delta TN: " + tnDelta + ", Delta total: " + totalDelta);
+			currentLocalStock -= totalDelta;
+
+			System.out.println("📊 Stock actual local: " + variation.getStock() + ", MELI: " + meliCurrentStock
+					+ ", TN: " + tnCurrentStock);
+			System.out
+					.println("📈 Delta MELI: " + meliDelta + ", Delta TN: " + tnDelta + ", Delta total: " + totalDelta);
 			System.out.println("🎯 Nuevo stock local calculado: " + currentLocalStock);
 
 			variation.setStock(currentLocalStock);
@@ -213,18 +206,27 @@ public class VariationService {
 			product.setStock(totalProductStock);
 			productRepository.save(product);
 
-			if (variation.getMeliId() != null && !variation.getMeliId().isEmpty()) {
+			if (variation.getMeliId() != null) {
 				try {
 					MlUpdateProductRequest mlRequest = new MlUpdateProductRequest();
+					var variationList = new ArrayList<VariationsDTO>();
+					if(meliItemDto != null){
+						for(MeliVariationDto var :meliItemDto.getVariations()){
+							variationList.add(VariationsDTO.builder()
+									.available_quantity(
+											variation.getId().equals(var.getId())?
+											currentLocalStock:var.getAvailableQuantity()
+											)
+									.id(var.getId()).build()
+									);
+							}
+						
+					}
 					
-					// Crear una variación con el stock actualizado
-					VariationsDTO variationDTO = new VariationsDTO();
-					variationDTO.setId(variation.getMeliId());
-					variationDTO.setAvailable_quantity(currentLocalStock);
-					
-					mlRequest.setVariations(List.of(variationDTO));
-					
-					boolean mlSuccess = mercadoLibreApiOutput.stockUpdate(product.getMercadoLibreId(), tenant.getName(), mlRequest);
+					mlRequest.setVariations(variationList);
+
+					boolean mlSuccess = mercadoLibreApiOutput.stockUpdate(product.getMercadoLibreId(), tenant.getName(),
+							mlRequest);
 					if (mlSuccess) {
 						System.out.println("✅ Stock actualizado en MELI: " + currentLocalStock);
 					} else {
@@ -238,12 +240,8 @@ public class VariationService {
 			// Actualizar Tienda Nube
 			if (variation.getTnId() != null && !variation.getTnId().isEmpty()) {
 				try {
-					tiendaNubeApiOutput.updateVariant(
-						Long.valueOf(product.getTiendaNubeId()),
-						Long.valueOf(variation.getTnId()),
-						currentLocalStock,
-						tenant
-					);
+					tiendaNubeApiOutput.updateVariant(Long.valueOf(product.getTiendaNubeId()),
+							Long.valueOf(variation.getTnId()), currentLocalStock, tenant);
 					System.out.println("✅ Stock actualizado en TN: " + currentLocalStock);
 				} catch (Exception e) {
 					System.err.println("❌ Error actualizando TN: " + e.getMessage());

@@ -25,7 +25,7 @@ public class StockUpdateDto {
         private Long variationId;
         private String name;
         private Integer stock;
-        private String meliId;
+        private Long meliId;
         private String tnId;
     }
     
