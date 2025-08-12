@@ -216,7 +216,6 @@ public class TiendaNubeApiOutput {
 	}
 	
 	public List<Map<String,Object>> getVariants(String itemId,Tenant tenant){
-		
 		if (itemId == null || itemId.isEmpty() || tenant == null) {
 			throw new IncorrectUpdateSemanticsDataAccessException("ID del producto o tenant no pueden ser nulos");
 		}

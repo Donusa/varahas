@@ -39,6 +39,7 @@ public class ProductDTO {
                 .price(prod.getPrice())
                 .stock(prod.getStock())
                 .mercadoLibreId(prod.getMercadoLibreId())
+                .tiendaNubeId(prod.getTiendaNubeId())
                 .isOnMercadoLibre(prod.getIsOnMercadoLibre())
                 .isOnTiendaNube(prod.getIsOnTiendaNube())
                 .variations(prod.getVariations())

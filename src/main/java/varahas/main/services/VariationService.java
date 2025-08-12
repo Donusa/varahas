@@ -3,14 +3,13 @@ package varahas.main.services;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import varahas.main.configuration.ApplicationConfig;
 import jakarta.transaction.Transactional;
 import varahas.main.dao.MlauDao;
 import varahas.main.dto.MeliItemDto;
@@ -33,6 +32,8 @@ import varahas.main.response.MlItemResponse;
 @Service
 public class VariationService {
 
+	private final ApplicationConfig applicationConfig;
+
 	@Autowired
 	private VariationRepository variationRepository;
 
@@ -51,29 +52,8 @@ public class VariationService {
 	@Autowired
 	private StockNotificationService stockNotificationService;
 
-	@Transactional
-	public void updateStockFromWebhook(Long variationId, int newRemoteStock, SourceChannel sourceChannel) {
-		Variations variation = variationRepository.findByIdForUpdate(variationId)
-				.orElseThrow(() -> new IllegalArgumentException("Variation not found"));
-
-		Product product = variation.getProduct();
-		if (product == null) {
-			throw new IllegalArgumentException("Product not found for variation");
-		}
-
-		if (!Objects.equals(variation.getStock(), newRemoteStock)) {
-			variation.setStock(newRemoteStock);
-			variationRepository.save(variation);
-
-			int totalStock = product.getVariations().stream().mapToInt(Variations::getStock).sum();
-			product.setStock(totalStock);
-			productRepository.save(product);
-
-			switch (sourceChannel) {
-			case MELI -> tiendaNubeApiOutput.notifyTiendaNube(product);
-			case TIENDA_NUBE -> mercadoLibreApiOutput.notifyMercadoLibre(product);
-			}
-		}
+	VariationService(ApplicationConfig applicationConfig) {
+		this.applicationConfig = applicationConfig;
 	}
 
 	public Optional<Variations> getByMeliId(Long meliId) {
@@ -82,6 +62,10 @@ public class VariationService {
 
 	public Optional<Variations> getByTnId(String tnId) {
 		return variationRepository.findByTnId(tnId);
+	}
+	
+	public Variations getById(Long id){
+		return variationRepository.findById(id).orElse(null);
 	}
 
 	public StockUpdateDto buildStockUpdate(Product product) {
@@ -120,9 +104,8 @@ public class VariationService {
 	}
 
 	@Transactional
-	public void processStockDelta(StockUpdateQueueHandler.StockUpdateEvent event) {
+	public void processStockDelta(StockUpdateQueueHandler.StockEvent event) {
 		Long variationId = event.variationId();
-		int newRemoteStock = event.stock();
 		SourceChannel source = event.source();
 
 		try {
@@ -132,20 +115,32 @@ public class VariationService {
 			Product product = variation.getProduct();
 			Tenant tenant = tenantService.getTenantByName(product.getTennantName());
 
-			System.out.println("🔄 Procesando delta de stock para variación: " + variationId + ", fuente: " + source);
-
 			Integer meliCurrentStock = null;
 			Integer tnCurrentStock = null;
 			MeliItemDto meliItemDto = null;
-			
+
+			if (event instanceof StockUpdateQueueHandler.LocalStockUpdateEvent localEvent) {
+				int stock = localEvent.stock();
+
+				variation.setStock(stock);
+				variationRepository.save(variation);
+
+				int total = product.getVariations().stream().mapToInt(Variations::getStock).sum();
+
+				product.setStock(total);
+				productRepository.save(product);
+
+				notifyExternalChannels(product, variation, tenant, stock);
+
+				return;
+			}
+
 			try {
-				meliItemDto = mercadoLibreApiOutput.getItemData(product.getMercadoLibreId(),
-						tenant.getName());
+				meliItemDto = mercadoLibreApiOutput.getItemData(product.getMercadoLibreId(), tenant.getName());
 				if (variation.getMeliId() != null) {
 					MlItemResponse mlItemResponse = mercadoLibreApiOutput
 							.getCurrentMELIStock(product.getMercadoLibreId(), tenant.getName());
 					if (mlItemResponse != null) {
-						// meliCurrentStock = mlItemResponse.getAvailable_quantity();
 
 						if (meliItemDto != null && meliItemDto.getVariations() != null) {
 							for (MeliVariationDto mlVar : meliItemDto.getVariations()) {
@@ -210,30 +205,21 @@ public class VariationService {
 				try {
 					MlUpdateProductRequest mlRequest = new MlUpdateProductRequest();
 					var variationList = new ArrayList<VariationsDTO>();
-					if(meliItemDto != null){
-						for(MeliVariationDto var :meliItemDto.getVariations()){
+					if (meliItemDto != null) {
+						for (MeliVariationDto var : meliItemDto.getVariations()) {
 							variationList.add(VariationsDTO.builder()
-									.available_quantity(
-											variation.getId().equals(var.getId())?
-											currentLocalStock:var.getAvailableQuantity()
-											)
-									.id(var.getId()).build()
-									);
-							}
-						
+									.available_quantity(variation.getMeliId().equals(var.getId()) ? currentLocalStock
+											: var.getAvailableQuantity())
+									.id(var.getId()).build());
+						}
+
 					}
-					
+
 					mlRequest.setVariations(variationList);
 
-					boolean mlSuccess = mercadoLibreApiOutput.stockUpdate(product.getMercadoLibreId(), tenant.getName(),
-							mlRequest);
-					if (mlSuccess) {
-						System.out.println("✅ Stock actualizado en MELI: " + currentLocalStock);
-					} else {
-						System.err.println("❌ Error actualizando stock en MELI");
-					}
+					mercadoLibreApiOutput.stockUpdate(product.getMercadoLibreId(), tenant.getName(), mlRequest);
 				} catch (Exception e) {
-					System.err.println("❌ Error actualizando MELI: " + e.getMessage());
+					System.err.println("Error actualizando MELI: " + e.getMessage());
 				}
 			}
 
@@ -242,23 +228,60 @@ public class VariationService {
 				try {
 					tiendaNubeApiOutput.updateVariant(Long.valueOf(product.getTiendaNubeId()),
 							Long.valueOf(variation.getTnId()), currentLocalStock, tenant);
-					System.out.println("✅ Stock actualizado en TN: " + currentLocalStock);
 				} catch (Exception e) {
-					System.err.println("❌ Error actualizando TN: " + e.getMessage());
+					System.err.println("Error actualizando TN: " + e.getMessage());
 				}
 			}
 
 			try {
 				StockUpdateDto stockUpdate = buildStockUpdate(product);
 				stockNotificationService.sendUpdate(stockUpdate);
-				System.out.println("📢 Notificación de stock enviada");
 			} catch (Exception e) {
-				System.err.println("❌ Error enviando notificación: " + e.getMessage());
+				System.err.println("Error enviando notificación: " + e.getMessage());
 			}
 
 		} catch (Exception e) {
-			System.err.println("❌ Error procesando delta de stock: " + e.getMessage());
+			System.err.println("Error procesando delta de stock: " + e.getMessage());
 			throw new RuntimeException("Error procesando delta de stock", e);
+		}
+	}
+
+	private void notifyExternalChannels(Product product, Variations variation, Tenant tenant, int stock) {
+		System.out.println("NotifyExternalChannels");
+		try {
+			MeliItemDto meli = mercadoLibreApiOutput.getItemData(product.getMercadoLibreId(), tenant.getName());
+
+			if (variation.getMeliId() != null) {
+				try {
+					MlUpdateProductRequest mlRequest = new MlUpdateProductRequest();
+					var variationList = new ArrayList<VariationsDTO>();
+					if (meli != null) {
+						for (MeliVariationDto var : meli.getVariations()) {
+							variationList.add(VariationsDTO.builder().available_quantity(
+									variation.getMeliId().equals(var.getId()) ? stock : var.getAvailableQuantity())
+									.id(var.getId()).build());
+						}
+					}
+
+					mlRequest.setVariations(variationList);
+
+					mercadoLibreApiOutput.stockUpdate(product.getMercadoLibreId(), tenant.getName(), mlRequest);
+				} catch (Exception e) {
+					System.err.println("Error actualizando MELI: " + e.getMessage());
+				}
+			}
+
+			if (variation.getTnId() != null && !variation.getTnId().isEmpty()) {
+				try {
+					tiendaNubeApiOutput.updateVariant(Long.valueOf(product.getTiendaNubeId()),
+							Long.valueOf(variation.getTnId()), stock, tenant);
+				} catch (Exception e) {
+					System.err.println("Error actualizando TN: " + e.getMessage());
+				}
+			}
+
+		} catch (Exception e) {
+			System.err.println("Error al actualizar: "+ e.getMessage());
 		}
 	}
 }

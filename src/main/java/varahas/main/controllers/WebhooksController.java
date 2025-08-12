@@ -66,14 +66,13 @@ public class WebhooksController {
 
 	        for (MeliVariationDto meliVar : item.getVariations()) {
 	            String meliVariationId = meliVar.getUserProductId();
-	            Integer meliStock = meliVar.getAvailableQuantity();
 
 	            Optional<Variations> optionalVar = variationService.findByMlau(meliVariationId, true);
 
 	            if (optionalVar.isPresent()) {
 	                Variations variation = optionalVar.get();
 	                
-	                stockUpdateQueueHandler.enqueueEvent(variation.getId(), meliStock, SourceChannel.MELI);
+	                stockUpdateQueueHandler.enqueueEvent(variation.getId(), SourceChannel.MELI);
 	                System.out.println("📥 Evento de MELI encolado para variación: " + variation.getId());
 	            }
 	        }
@@ -132,7 +131,7 @@ public class WebhooksController {
 	                int localStock = v.getStock();
 
 	                if (localStock != remoteStock) {
-	                    stockUpdateQueueHandler.enqueueEvent(v.getId(), remoteStock, SourceChannel.TIENDA_NUBE);
+	                    stockUpdateQueueHandler.enqueueEvent(v.getId(), SourceChannel.TIENDA_NUBE);
 	                    System.out.println("📥 Evento de TN encolado para variación: " + v.getId());
 	                }
 	            }
