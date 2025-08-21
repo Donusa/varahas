@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,12 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 import varahas.main.dao.MlauDao;
 import varahas.main.dto.MeliItemDto;
 import varahas.main.dto.MeliVariationDto;
-import varahas.main.dto.StockUpdateDto;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.Variations;
 import varahas.main.enums.SourceChannel;
 import varahas.main.output.MercadoLibreApiOutput;
 import varahas.main.output.TiendaNubeApiOutput;
+import varahas.main.queue.StockUpdateQueueHandler;
 import varahas.main.services.ProductService;
 import varahas.main.services.TenantService;
 import varahas.main.services.VariationService;
@@ -36,11 +35,11 @@ public class WebhooksController {
 	@Autowired
 	private TiendaNubeApiOutput tiendaNubeApiOutput;
 	@Autowired
-	private SimpMessagingTemplate messagingTemplate;
-	@Autowired
 	private VariationService variationService;
 	@Autowired
 	private ProductService productService;
+	@Autowired
+	private StockUpdateQueueHandler stockUpdateQueueHandler;
 
 	
 	@PostMapping("/ml")
@@ -67,16 +66,15 @@ public class WebhooksController {
 
 	        for (MeliVariationDto meliVar : item.getVariations()) {
 	            String meliVariationId = meliVar.getUserProductId();
-	            Integer meliStock = meliVar.getAvailableQuantity();
 
 	            Optional<Variations> optionalVar = variationService.findByMlau(meliVariationId, true);
 
-	            Variations variation = optionalVar.get();
-
-	            variationService.updateStockFromWebhook(variation.getId(), meliStock, SourceChannel.MELI);
-	            
-	            StockUpdateDto stockUpdate = variationService.buildStockUpdate(variation.getProduct());
-	            messagingTemplate.convertAndSend("/topic/stock", stockUpdate);
+	            if (optionalVar.isPresent()) {
+	                Variations variation = optionalVar.get();
+	                
+	                stockUpdateQueueHandler.enqueueEvent(variation.getId(), SourceChannel.MELI);
+	                System.out.println("📥 Evento de MELI encolado para variación: " + variation.getId());
+	            }
 	        }
 		} catch (Exception e) {
 			System.out.println("🚫 Error al procesar la notificación: " + e.getMessage());
@@ -128,17 +126,16 @@ public class WebhooksController {
 		        }
 		        
 		        for (Variations v : product.getVariations()) {
-		            if (trackingSet.containsKey(v.getTnId())) {
-		                int remoteStock = trackingSet.get(v.getTnId());
-		                int localStock = v.getStock();
+	            if (trackingSet.containsKey(v.getTnId())) {
+	                int remoteStock = trackingSet.get(v.getTnId());
+	                int localStock = v.getStock();
 
-		                if (localStock != remoteStock) {
-		                    variationService.updateStockFromWebhook(v.getId(), remoteStock, SourceChannel.TIENDA_NUBE);
-		                    StockUpdateDto stockUpdate = variationService.buildStockUpdate(v.getProduct());
-		                    messagingTemplate.convertAndSend("/topic/stock", stockUpdate);
-		                }
-		            }
-		        }
+	                if (localStock != remoteStock) {
+	                    stockUpdateQueueHandler.enqueueEvent(v.getId(), SourceChannel.TIENDA_NUBE);
+	                    System.out.println("📥 Evento de TN encolado para variación: " + v.getId());
+	                }
+	            }
+	        }
 		        
 		        return ResponseEntity.ok().build();
 		       

@@ -2,7 +2,6 @@ package varahas.main.output;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,25 +21,22 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import varahas.main.dto.TnAuthDto;
-import varahas.main.dto.TnStockUpdateDto;
 import varahas.main.dto.TnVariationUpdateDto;
 import varahas.main.entities.Product;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.TnProduct;
-import varahas.main.entities.Variations;
 import varahas.main.services.TenantService;
 
 @Service
 public class TiendaNubeApiOutput {
 	
-	@Value("${varahas.tn.api.agent:Varahas-testing 18768}")
-	private String userAgent;
+	private final String TN_BASE_URL = "https://api.nuvemshop.com.br/v1/";
 	
-	@Value("${varahas.tn.api.id:6385727}")
-    private String apiId;
+	@Value("${varahas.tn.api.client-secret}")
+	private String clientSecret;
 	
-	@Value("${varahas.tn.api.token:3754158629ec4945a94cbeca88789caf77a1dbb2}")
-	private String apiToken;
+	@Value("${varahas.tn.api.client-id}")
+	private String clientId;
 
 	@Autowired
 	private RestTemplate restTemplate;
@@ -54,12 +50,11 @@ public class TiendaNubeApiOutput {
 			throw new IncorrectUpdateSemanticsDataAccessException("Datos del producto o tenant no pueden ser nulos");
 		}
 		
-		String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products";
+		String url = TN_BASE_URL + tenant.getTnUserId() + "/products";
 		
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
 		
 		HttpEntity<TnProduct> requestEntity = new HttpEntity<>(productData, headers);
 		
@@ -77,11 +72,10 @@ public class TiendaNubeApiOutput {
 		if (tenant == null) {
 			throw new IncorrectUpdateSemanticsDataAccessException("Tenant no puede ser nulo");
 		}
-		String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products";
+		String url = TN_BASE_URL + tenant.getTnUserId() + "/products";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
 		
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 		
@@ -109,12 +103,11 @@ public class TiendaNubeApiOutput {
 			throw new IncorrectUpdateSemanticsDataAccessException("ID del producto o tenant no pueden ser nulos");
 		}
 
-		String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + itemId;
+		String url = TN_BASE_URL + tenant.getTnUserId() + "/products/" + itemId;
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
 
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 		
@@ -135,12 +128,11 @@ public class TiendaNubeApiOutput {
 
 
 	public Object updateProduct(Long productId, List<TnVariationUpdateDto> variants, Tenant tenant) {
-	    String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + productId;
+	    String url = TN_BASE_URL + tenant.getTnUserId() + "/products/" + productId;
 
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.setContentType(MediaType.APPLICATION_JSON);
 	    headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-	    headers.set("User-Agent", userAgent);
 
 	    Map<String, Object> body = Map.of("variants", variants);
 
@@ -167,12 +159,11 @@ public class TiendaNubeApiOutput {
 			throw new IncorrectUpdateSemanticsDataAccessException("Tenant no puede ser nulo");
 		}
 
-		String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/categories";
+		String url = TN_BASE_URL + tenant.getTnUserId() + "/categories";
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
 
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 
@@ -192,22 +183,20 @@ public class TiendaNubeApiOutput {
 		
 	}
 	
-	public TnAuthDto tradeCodeForToken(String code) {
+	public TnAuthDto tradeCodeForToken(String code, String tenantName) {
 	    if (code == null || code.isEmpty()) {
 	        throw new IncorrectUpdateSemanticsDataAccessException("Código no puede ser nulo o vacío");
 	    }
 
 	    String url = "https://www.tiendanube.com/apps/authorize/token";
-	    String clientId = "18768";
-	    String clientSecret = "07bdfd1f6929942799b4f5f4fed9d0b4c1bae811b6808eea";
 
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
 
 	    MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-	    body.add("client_id", clientId);
-	    body.add("client_secret", clientSecret);
+	    body.add("client_id", this.clientId);
+	    body.add("client_secret", this.clientSecret);
 	    body.add("grant_type", "authorization_code");
 	    body.add("code", code);
 
@@ -217,6 +206,8 @@ public class TiendaNubeApiOutput {
 	        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
 	        ObjectMapper objectMapper = new ObjectMapper();
 	        TnAuthDto dto = objectMapper.readValue(response.getBody(), TnAuthDto.class);
+	        Tenant tenant = tenantService.getTenantByName(tenantName);
+	        tenantService.save(tenant);
 	        return dto;
 	    } catch (Exception e) {
 	        throw new IncorrectUpdateSemanticsDataAccessException("Error al intercambiar el código por el token: " + e.getMessage());
@@ -225,16 +216,14 @@ public class TiendaNubeApiOutput {
 	}
 	
 	public List<Map<String,Object>> getVariants(String itemId,Tenant tenant){
-		
 		if (itemId == null || itemId.isEmpty() || tenant == null) {
 			throw new IncorrectUpdateSemanticsDataAccessException("ID del producto o tenant no pueden ser nulos");
 		}
 		
-		String variantsUrl = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + itemId + "/variants";
+		String variantsUrl = TN_BASE_URL + tenant.getTnUserId() + "/products/" + itemId + "/variants";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-		headers.set("User-Agent", userAgent);
 		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 		
 		try {
@@ -252,12 +241,11 @@ public class TiendaNubeApiOutput {
 	
 
 	public Object updateVariant(Long productId, Long variantId, Integer stock, Tenant tenant) {
-	    String url = "https://api.nuvemshop.com.br/v1/" + apiId + "/products/" + productId + "/variants/" + variantId;
+	    String url = TN_BASE_URL + tenant.getTnUserId() + "/products/" + productId + "/variants/" + variantId;
 
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.setContentType(MediaType.APPLICATION_JSON);
 	    headers.set("Authentication", "bearer " + tenant.getTiendaNubeAccessToken());
-	    headers.set("User-Agent", userAgent);
 
 	    Map<String, Object> body = Map.of("stock", stock);
 

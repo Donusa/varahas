@@ -18,7 +18,7 @@ public interface VariationRepository extends JpaRepository<Variations, Long> {
     @Query("SELECT v FROM Variations v WHERE v.id = :id")
     Optional<Variations> findByIdForUpdate(@Param("id") Long id);
 
-    Optional<Variations> findByMeliId(String meliId);
+    Optional<Variations> findByMeliId(Long meliId);
 
     Optional<Variations> findByTnId(String tnId);
     

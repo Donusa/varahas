@@ -27,7 +27,7 @@ public class Variations {
 	private String name;
 	@Column(nullable = false)
 	private Integer stock;
-	private String meliId;
+	private Long meliId;
 	private String tnId;
 	private String mlau;
 	@ManyToOne
