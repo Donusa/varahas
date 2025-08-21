@@ -46,6 +46,7 @@ public class MlController {
 	        return ResponseEntity.ok("Token válido encontrado");
 
 	    } catch (RuntimeException ex) {
+	    	System.out.println("Error validating token: " + ex.getMessage());
 	        return ResponseEntity
 	                .status(HttpStatus.NOT_FOUND)
 	                .body(ex.getMessage());

@@ -15,6 +15,15 @@ import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
@@ -50,6 +59,7 @@ public class SecurityConfiguration {
                 })
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(corsLoggingFilter(), jwtAuthFilter.getClass())
                 .logout(logout -> logout.logoutUrl("/api/auth/logout")
                         .addLogoutHandler(logoutHandler)
                         .logoutSuccessHandler((request, response, authentication) -> SecurityContextHolder.clearContext()));
@@ -66,5 +76,37 @@ public class SecurityConfiguration {
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+    
+    @Bean
+    Filter corsLoggingFilter() {
+        return new Filter() {
+            @Override
+            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                    throws IOException, ServletException {
+                
+                HttpServletRequest httpRequest = (HttpServletRequest) request;
+                HttpServletResponse httpResponse = (HttpServletResponse) response;
+                
+                String origin = httpRequest.getHeader("Origin");
+                String method = httpRequest.getMethod();
+                String uri = httpRequest.getRequestURI();
+                
+                if (origin != null) {
+                    System.out.println("🌐 Request CORS: origin=" + origin + ", method=" + method + ", uri=" + uri + ", allowedOrigin=" + allowedOrigin);
+                    
+                    if (!allowedOrigin.equals("*") && !allowedOrigin.equals(origin)) {
+                        System.out.println("❌ CORS BLOCKED: origin=" + origin + " no coincide con allowedOrigin=" + allowedOrigin);
+                    }
+                }
+                
+                chain.doFilter(request, response);
+                
+                String corsHeader = httpResponse.getHeader("Access-Control-Allow-Origin");
+                if (origin != null && corsHeader == null) {
+                    System.out.println("⚠️ CORS REJECTED: No se envió Access-Control-Allow-Origin para origin=" + origin);
+                }
+            }
+        };
     }
 }
