@@ -346,12 +346,15 @@ public class VariationService {
 			case "FULL": {
 				if (product != null && product.getVariations() != null) {
 					product.getVariations().removeIf(v -> v.getId().equals(variationId));
-					// Recalculate product stock after removal
+					
 					int totalProductStock = product.getVariations().stream().mapToInt(Variations::getStock).sum();
 					product.setStock(totalProductStock);
+					product.setIsOnMercadoLibre((byte) 0);
+					product.setIsOnTiendaNube((byte)0);
+					product.setMercadoLibreId(null);
+					product.setTiendaNubeId(null);
 					productRepository.save(product);
 				} else {
-					// Fallback: delete directly if product association missing
 					variationRepository.deleteById(variationId);
 				}
 				System.out.println("🗑️ FULL removal of variation=" + variationId + " for product=" + (product != null ? product.getId() : null));
@@ -361,12 +364,16 @@ public class VariationService {
 				variation.setMeliId(null);
 				variation.setMlau(null);
 				variationRepository.save(variation);
+				product.setIsOnMercadoLibre((byte) 0);
+				product.setMercadoLibreId(null);
 				System.out.println("🔗 Unlinked ML for variation=" + variationId);
 				return product;
 			}
 			case "TN": {
 				variation.setTnId(null);
 				variationRepository.save(variation);
+				product.setIsOnTiendaNube((byte)0);
+				product.setTiendaNubeId(null);
 				System.out.println("🔗 Unlinked TN for variation=" + variationId);
 				return product;
 			}
