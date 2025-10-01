@@ -52,6 +52,13 @@ public class Tenant {
 	private Boolean mlTokenJobProgrammed = false;
 	@Column(nullable = true)
 	private String tnUserId;
+	@Column(nullable = true, unique = true)
+	private String cuit;
+	@Column(nullable = true, unique = true)
+	private int ImpTrib; //tipo de percepcion del negocio
+	@Column(nullable = true, unique = true)
+	private double alicuota; //porcentaje de la percepcion de arriba
+	
 	@Override
 	public String toString() {
 		return "";
