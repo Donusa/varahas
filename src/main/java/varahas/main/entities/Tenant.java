@@ -11,6 +11,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -34,6 +35,13 @@ public class Tenant {
 	@Column(updatable = false, nullable = false)
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
+	private String cuil;
+	@Lob
+	@Column(columnDefinition = "TEXT")
+	private String arcaToken;
+	@Lob
+	@Column(columnDefinition = "TEXT")
+	private String arcaSign;
 	@OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonIgnore
     private List<User> users;

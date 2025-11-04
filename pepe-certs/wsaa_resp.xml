@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?><soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><soapenv:Body><loginCmsResponse xmlns="http://wsaa.view.sua.dvadac.desein.afip.gov"><loginCmsReturn>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;yes&quot;?&gt;
+&lt;loginTicketResponse version=&quot;1.0&quot;&gt;
+    &lt;header&gt;
+        &lt;source&gt;CN=wsaahomo, O=AFIP, C=AR, SERIALNUMBER=CUIT 33693450239&lt;/source&gt;
+        &lt;destination&gt;SERIALNUMBER=CUIT 20433173946, CN=tahomo&lt;/destination&gt;
+        &lt;uniqueId&gt;2721502461&lt;/uniqueId&gt;
+        &lt;generationTime&gt;2025-11-04T17:07:22.643-03:00&lt;/generationTime&gt;
+        &lt;expirationTime&gt;2025-11-05T05:07:22.643-03:00&lt;/expirationTime&gt;
+    &lt;/header&gt;
+    &lt;credentials&gt;
+        &lt;token&gt;PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9InllcyI/Pgo8c3NvIHZlcnNpb249IjIuMCI+CiAgICA8aWQgc3JjPSJDTj13c2FhaG9tbywgTz1BRklQLCBDPUFSLCBTRVJJQUxOVU1CRVI9Q1VJVCAzMzY5MzQ1MDIzOSIgZHN0PSJDTj13c2ZlLCBPPUFGSVAsIEM9QVIiIHVuaXF1ZV9pZD0iMzQ5MDQ4NTcxOCIgZ2VuX3RpbWU9IjE3NjIyODY3ODIiIGV4cF90aW1lPSIxNzYyMzMwMDQyIi8+CiAgICA8b3BlcmF0aW9uIHR5cGU9ImxvZ2luIiB2YWx1ZT0iZ3JhbnRlZCI+CiAgICAgICAgPGxvZ2luIGVudGl0eT0iMzM2OTM0NTAyMzkiIHNlcnZpY2U9IndzZmUiIHVpZD0iU0VSSUFMTlVNQkVSPUNVSVQgMjA0MzMxNzM5NDYsIENOPXRhaG9tbyIgYXV0aG1ldGhvZD0iY21zIiByZWdtZXRob2Q9IjIyIj4KICAgICAgICAgICAgPHJlbGF0aW9ucz4KICAgICAgICAgICAgICAgIDxyZWxhdGlvbiBrZXk9IjIwNDMzMTczOTQ2IiByZWx0eXBlPSI0Ii8+CiAgICAgICAgICAgIDwvcmVsYXRpb25zPgogICAgICAgIDwvbG9naW4+CiAgICA8L29wZXJhdGlvbj4KPC9zc28+Cg==&lt;/token&gt;
+        &lt;sign&gt;DQS57Nussyp5isrEJUROATCMAgxszBoXh5+FDJ2ssXgpRT81YkWDUEDcUmEt0K8t/cWwXfrg0TkV+G3TqkuuHU8E9OpWJoZB0w4NjdL5ATstaAAXa7F0WlkB4hNKjvDDFNEAibCANueQEYhO1gHn7eVZb1j1j3sCluG+zCg55lg=&lt;/sign&gt;
+    &lt;/credentials&gt;
+&lt;/loginTicketResponse&gt;
+</loginCmsReturn></loginCmsResponse></soapenv:Body></soapenv:Envelope>

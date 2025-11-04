@@ -2,7 +2,6 @@ package varahas.main.output;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,12 +21,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import varahas.main.dto.TnAuthDto;
-import varahas.main.dto.TnStockUpdateDto;
 import varahas.main.dto.TnVariationUpdateDto;
 import varahas.main.entities.Product;
 import varahas.main.entities.Tenant;
 import varahas.main.entities.TnProduct;
-import varahas.main.entities.Variations;
 import varahas.main.services.TenantService;
 
 @Service
