@@ -22,6 +22,7 @@ public class ProductDTO {
 	private BigDecimal price;
 	private Integer stock;
 	private String mercadoLibreId;
+	private String tiendaNubeId;
 	private byte isOnMercadoLibre;
 	private byte isOnTiendaNube;
 	private List<Variations> variations;
@@ -38,6 +39,7 @@ public class ProductDTO {
                 .price(prod.getPrice())
                 .stock(prod.getStock())
                 .mercadoLibreId(prod.getMercadoLibreId())
+                .tiendaNubeId(prod.getTiendaNubeId())
                 .isOnMercadoLibre(prod.getIsOnMercadoLibre())
                 .isOnTiendaNube(prod.getIsOnTiendaNube())
                 .variations(prod.getVariations())

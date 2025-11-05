@@ -55,6 +55,9 @@ public class Tenant {
 	private Date mlAccessTokenExpirationDate;
 	@Column(nullable = true)
 	private String mlRefreshToken;
+	@Builder.Default
+	@Column(nullable = true)
+	private Boolean mlTokenJobProgrammed = false;
 	@Column(nullable = true)
 	private String tnUserId;
 	@Override

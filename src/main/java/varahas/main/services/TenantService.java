@@ -46,4 +46,10 @@ public class TenantService {
 		
 	}
 
+	public Tenant findById(Long tenantId) {
+		return tenantRepository.findById(tenantId)
+				.orElseThrow(() -> new RuntimeException("Tenant not found for id: " + tenantId));
+	}
+
+
 }

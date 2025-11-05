@@ -19,7 +19,7 @@ public class ProductService {
 		productRepository.deleteById(id);
 	}
 	
-	public Product getProduct(Long id) {
+	public Product getProductById(Long id) {
 		return productRepository.findById(id).orElseThrow(
 				() -> new IllegalArgumentException("Product not found"));
 	}
