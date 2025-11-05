@@ -3,9 +3,9 @@
   <header>
     <source>SERIALNUMBER=CUIT 20433173946,CN=taHomo</source>
     <destination>CN=wsaahomo, O=AFIP, C=AR, SERIALNUMBER=CUIT 33693450239</destination>
-    <uniqueId>1762286842</uniqueId>
-    <generationTime>2025-11-04T16:57:22-03:00</generationTime>
-    <expirationTime>2025-11-04T17:37:22-03:00</expirationTime>
+    <uniqueId>1762352798</uniqueId>
+    <generationTime>2025-11-05T11:16:38-03:00</generationTime>
+    <expirationTime>2025-11-05T11:56:38-03:00</expirationTime>
   </header>
   <service>wsfe</service>
 </loginTicketRequest>

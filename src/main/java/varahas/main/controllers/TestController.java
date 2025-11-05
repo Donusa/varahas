@@ -19,13 +19,16 @@ import varahas.main.dto.SaveResult;
 import varahas.main.dto.TokenSign;
 import varahas.main.entities.Tenant;
 import varahas.main.exceptions.AlreadyAuthenticatedException;
+import varahas.main.services.ArcaService;
 import varahas.main.services.TenantService;
 import varahas.main.services.WsaaService;
 
 @RestController
 @RequestMapping("/test")
 public class TestController {
-
+	
+	@Autowired
+	private ArcaService arcaService;
 	@Autowired
 	private WsaaService wsaaService;
 	@Autowired
@@ -41,7 +44,7 @@ public class TestController {
 	 * tenantName); }
 	 */
 
-	@GetMapping("/arca")
+	@GetMapping("/generateCerts")
 	public ResponseEntity<?> signCerts(@RequestParam String tenantName) {
 		Tenant tenant = tenantService.getTenantByName(tenantName);
 		  try {
@@ -49,14 +52,14 @@ public class TestController {
 
 		    wsaaService.writeLoginTicketRequest(tenantName, tenant.getCuil(), "taHomo", "wsfe", true);
 		    wsaaService.signCmsPem(p);
-		    wsaaService.buildAndCallWsaa(tenantName, true);
+		    wsaaService.buildAndCallWsaa(tenantName);
 
 		    TokenSign ts = wsaaService.extractTokenSignFromWsaaResp(tenantName);
 		    tenant.setArcaToken(ts.token());
 		    tenant.setArcaSign(ts.sign());
 		    tenantService.save(tenant);
 
-		    return ResponseEntity.ok("token/sign actualizados para " + tenantName);
+		    return ResponseEntity.ok(tenantName + ": TA generado correctamente y token/sign guardados.");
 
 		  } catch (AlreadyAuthenticatedException ex) {
 		    if (tenant.getArcaToken() != null && !tenant.getArcaToken().isBlank()
@@ -68,7 +71,7 @@ public class TestController {
 		              "Esperá a que expire el TA vigente y volvé a generar.");
 
 		  } catch (Exception e) {
-		    return ResponseEntity.badRequest().body(e.getMessage());
+		    return ResponseEntity.badRequest().body("Error al generar el TA.");
 		  }
 	}
 
@@ -88,6 +91,46 @@ public class TestController {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al guardar los certificados.");
+		}
+	}
+	
+	@GetMapping("/iva")
+	public ResponseEntity<?> getIvaList(@RequestParam String tenantName) {
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		try {
+			return ResponseEntity.ok(arcaService.getIvaList(tenant));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
+	
+	@GetMapping("/tributos")
+	public ResponseEntity<?> getTributosList(@RequestParam String tenantName) {
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		try {
+			return ResponseEntity.ok(arcaService.getTributos(tenant));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
+	
+	@GetMapping("/ptovta")
+	public ResponseEntity<?> getPtoVtaList(@RequestParam String tenantName) {
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		try {
+			return ResponseEntity.ok(arcaService.getPtosVenta(tenant));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
+	
+	@GetMapping("/cbtes")
+	public ResponseEntity<?> getCbtesList(@RequestParam String tenantName) {
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		try {
+			return ResponseEntity.ok(arcaService.getTiposCbte(tenant));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
 		}
 	}
 }

@@ -54,6 +54,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.bouncycastle.util.Store;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
@@ -75,6 +76,8 @@ public class WsaaService {
 
 	private static final ZoneId AR = ZoneId.of("America/Argentina/Buenos_Aires");
 	private static final DateTimeFormatter ISO_OFFSET = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+	@Value("${WSAA}")
+	private String wsaaEndpoint;
 
 	public Path writeLoginTicketRequest(String tenantCode, String sourceCuit, String sourceCn, String service,
 			boolean homologacion) throws IOException {
@@ -230,7 +233,7 @@ public class WsaaService {
 		}
 	}
 
-	public Path buildAndCallWsaa(String tenantCode, boolean homologacion) throws Exception {
+	public Path buildAndCallWsaa(String tenantCode) throws Exception {
 		String safe = tenantCode.replaceAll("[^a-zA-Z0-9._-]", "_");
 		Path dir = Paths.get(safe + "-certs").toAbsolutePath().normalize();
 		Files.createDirectories(dir);
@@ -255,8 +258,7 @@ public class WsaaService {
 		Files.writeString(soapPath, soap, StandardCharsets.UTF_8, StandardOpenOption.CREATE,
 				StandardOpenOption.TRUNCATE_EXISTING);
 
-		String url = homologacion ? "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
-				: "https://wsaa.afip.gov.ar/ws/services/LoginCms";
+		String url = wsaaEndpoint;
 
 		HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
