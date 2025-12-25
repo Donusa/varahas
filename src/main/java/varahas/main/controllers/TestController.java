@@ -1,9 +1,12 @@
 package varahas.main.controllers;
 
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +27,7 @@ import varahas.main.services.TenantService;
 import varahas.main.services.WsaaService;
 
 @RestController
-@RequestMapping("/test")
+@RequestMapping("/arca")
 public class TestController {
 	
 	@Autowired
@@ -76,21 +79,66 @@ public class TestController {
 	}
 
 	@PostMapping(path = "/certs/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<?> uploadCerts(@RequestParam String tenantName, @RequestPart("crt") MultipartFile crt,
-			@RequestPart("key") MultipartFile key) {
+	public ResponseEntity<?> uploadCerts(@RequestParam String tenantName, @RequestPart("crt") MultipartFile crt) {
 
 		try {
-			SaveResult r = wsaaService.saveCertAndKey(tenantName, crt, key);
+			SaveResult r = wsaaService.saveCertOnly(tenantName, crt);
 			if (r.replaced()) {
-				return ResponseEntity.ok("Certs reemplazados en: " + r.dir());
+				return ResponseEntity.ok("Certificado reemplazado en: " + r.dir());
 			}
-			return ResponseEntity.status(HttpStatus.CREATED).body("Certs subidos en: " + r.dir());
+			return ResponseEntity.status(HttpStatus.CREATED).body("Certificado subido en: " + r.dir());
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().body(e.getMessage());
 		} catch (SecurityException e) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al guardar los certificados.");
+		}
+	}
+
+	@PostMapping("/certs/keygen")
+	public ResponseEntity<?> generateKey(@RequestParam String tenantName) {
+		try {
+			tenantService.getTenantByName(tenantName);
+			Path keyPath = wsaaService.generatePrivateKey(tenantName);
+			Path csrPath = wsaaService.generateCsr(tenantName);
+			byte[] csrBytes = Files.readAllBytes(csrPath);
+			String safe = tenantName.replaceAll("[^a-zA-Z0-9._-]", "_");
+			return ResponseEntity.status(HttpStatus.CREATED)
+					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + safe + ".csr\"")
+					.contentType(MediaType.APPLICATION_OCTET_STREAM)
+					.body(csrBytes);
+		} catch (FileAlreadyExistsException e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (SecurityException e) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+		} catch (RuntimeException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al generar la clave.");
+		}
+	}
+
+	@PostMapping("/tenant/cuil")
+	public ResponseEntity<?> setTenantCuil(@RequestParam String tenantName, @RequestParam String cuil) {
+		if (cuil == null || cuil.isBlank()) {
+			return ResponseEntity.badRequest().body("cuil vacío");
+		}
+		String normalized = cuil.replaceAll("\\D", "");
+		if (normalized.isBlank()) {
+			return ResponseEntity.badRequest().body("cuil inválido");
+		}
+		try {
+			Tenant tenant = tenantService.getTenantByName(tenantName);
+			tenant.setCuil(normalized);
+			tenantService.save(tenant);
+			return ResponseEntity.ok("CUIL actualizado para " + tenantName);
+		} catch (RuntimeException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar el CUIL.");
 		}
 	}
 	

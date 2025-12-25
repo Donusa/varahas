@@ -8,6 +8,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,7 +27,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -154,6 +157,120 @@ public class WsaaService {
 		}
 
 		return new SaveResult(dir, existed);
+	}
+
+	public SaveResult saveCertOnly(String tenantName, MultipartFile crt) throws IOException {
+		if (tenantName == null || tenantName.isBlank())
+			throw new IllegalArgumentException("tenantCode vacío");
+		if (crt == null || crt.isEmpty())
+			throw new IllegalArgumentException("archivo .crt vacío");
+
+		String crtName = (crt.getOriginalFilename() == null ? "" : crt.getOriginalFilename()).toLowerCase(Locale.ROOT);
+		if (!crtName.endsWith(".crt"))
+			throw new IllegalArgumentException("el archivo crt debe terminar en .crt");
+
+		String safe = tenantName.replaceAll("[^a-zA-Z0-9._-]", "_");
+		Path dir = Paths.get(safe + "-certs").toAbsolutePath().normalize();
+		Files.createDirectories(dir);
+
+		Path crtPath = dir.resolve("certificado.crt").normalize();
+		if (!crtPath.startsWith(dir))
+			throw new SecurityException("Ruta inválida");
+
+		boolean existed = Files.exists(crtPath);
+
+		try (InputStream in = crt.getInputStream()) {
+			Files.copy(in, crtPath, StandardCopyOption.REPLACE_EXISTING);
+		}
+
+		try {
+			Files.setPosixFilePermissions(crtPath, PosixFilePermissions.fromString("rw-r-----"));
+		} catch (UnsupportedOperationException ignored) {
+		}
+
+		return new SaveResult(dir, existed);
+	}
+
+	public Path generatePrivateKey(String tenantName) throws Exception {
+		if (tenantName == null || tenantName.isBlank())
+			throw new IllegalArgumentException("tenantCode vacío");
+
+		String safe = tenantName.replaceAll("[^a-zA-Z0-9._-]", "_");
+		Path dir = Paths.get(safe + "-certs").toAbsolutePath().normalize();
+		Files.createDirectories(dir);
+
+		Path keyPath = dir.resolve("private.key").normalize();
+		if (!keyPath.startsWith(dir))
+			throw new SecurityException("Ruta inválida");
+		if (Files.exists(keyPath))
+			throw new FileAlreadyExistsException("Ya existe private.key en: " + dir);
+
+		List<String> cmd = List.of("openssl", "genrsa", "-out", keyPath.toString(), "2048");
+		ProcessBuilder pb = new ProcessBuilder(cmd);
+		pb.redirectErrorStream(true);
+		Process p = pb.start();
+
+		boolean done = p.waitFor(30, TimeUnit.SECONDS);
+		String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+		if (!done) {
+			p.destroyForcibly();
+			throw new IllegalStateException("Timeout ejecutando openssl genrsa");
+		}
+		if (p.exitValue() != 0) {
+			throw new IllegalStateException(
+					"Error ejecutando openssl genrsa (exit=" + p.exitValue() + "): " + out);
+		}
+
+		if (!Files.exists(keyPath) || Files.size(keyPath) == 0)
+			throw new IllegalStateException("No se generó la clave en: " + keyPath);
+
+		try {
+			Files.setPosixFilePermissions(keyPath, PosixFilePermissions.fromString("rw-------"));
+		} catch (UnsupportedOperationException ignored) {
+		}
+
+		return keyPath;
+	}
+
+	public Path generateCsr(String tenantName) throws Exception {
+		if (tenantName == null || tenantName.isBlank())
+			throw new IllegalArgumentException("tenantCode vacío");
+
+		String safe = tenantName.replaceAll("[^a-zA-Z0-9._-]", "_");
+		Path dir = Paths.get(safe + "-certs").toAbsolutePath().normalize();
+		Files.createDirectories(dir);
+
+		Path keyPath = dir.resolve("private.key").normalize();
+		Path csrPath = dir.resolve("pedido.csr").normalize();
+		if (!keyPath.startsWith(dir) || !csrPath.startsWith(dir))
+			throw new SecurityException("Ruta inválida");
+		if (!Files.exists(keyPath))
+			throw new IllegalStateException("No existe private.key en: " + dir);
+		if (Files.exists(csrPath))
+			throw new FileAlreadyExistsException("Ya existe pedido.csr en: " + dir);
+
+		List<String> cmd = List.of("openssl", "req", "-new", "-key", keyPath.toString(), "-out", csrPath.toString(),
+				"-subj", "/CN=" + safe);
+		ProcessBuilder pb = new ProcessBuilder(cmd);
+		pb.redirectErrorStream(true);
+		Process p = pb.start();
+
+		boolean done = p.waitFor(30, TimeUnit.SECONDS);
+		String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+		if (!done) {
+			p.destroyForcibly();
+			throw new IllegalStateException("Timeout ejecutando openssl req");
+		}
+		if (p.exitValue() != 0) {
+			throw new IllegalStateException("Error ejecutando openssl req (exit=" + p.exitValue() + "): " + out);
+		}
+
+		if (!Files.exists(csrPath) || Files.size(csrPath) == 0)
+			throw new IllegalStateException("No se generó el CSR en: " + csrPath);
+
+		return csrPath;
 	}
 
 	public Path signCmsPem(Path tenantDir) throws Exception {
