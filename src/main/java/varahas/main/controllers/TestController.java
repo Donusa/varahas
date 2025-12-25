@@ -48,12 +48,15 @@ public class TestController {
 	 */
 
 	@GetMapping("/generateCerts")
-	public ResponseEntity<?> signCerts(@RequestParam String tenantName) {
+	public ResponseEntity<?> signCerts(@RequestParam String tenantName, @RequestParam String cnName) {
+		if (cnName == null || cnName.isBlank()) {
+			return ResponseEntity.badRequest().body("cnName vacío");
+		}
 		Tenant tenant = tenantService.getTenantByName(tenantName);
 		  try {
 		    Path p = Paths.get(tenantName + "-certs").toAbsolutePath().normalize();
 
-		    wsaaService.writeLoginTicketRequest(tenantName, tenant.getCuil(), "taHomo", "wsfe", true);
+		    wsaaService.writeLoginTicketRequest(tenantName, tenant.getCuil(), cnName, "wsfe", true);
 		    wsaaService.signCmsPem(p);
 		    wsaaService.buildAndCallWsaa(tenantName);
 
