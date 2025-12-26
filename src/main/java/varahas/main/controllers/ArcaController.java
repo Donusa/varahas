@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import varahas.main.dto.FeCaeSolicitarRequestDto;
+import varahas.main.dto.NextCbteRequestDto;
 import varahas.main.dto.SaveResult;
 import varahas.main.dto.TokenSign;
 import varahas.main.entities.Tenant;
@@ -28,7 +31,7 @@ import varahas.main.services.WsaaService;
 
 @RestController
 @RequestMapping("/arca")
-public class TestController {
+public class ArcaController {
 	
 	@Autowired
 	private ArcaService arcaService;
@@ -180,6 +183,36 @@ public class TestController {
 		Tenant tenant = tenantService.getTenantByName(tenantName);
 		try {
 			return ResponseEntity.ok(arcaService.getTiposCbte(tenant));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
+
+	@GetMapping("/monedas")
+	public ResponseEntity<?> getMonedas(@RequestParam String tenantName) {
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		try {
+			return ResponseEntity.ok(arcaService.getTiposMonedas(tenant));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
+
+	@PostMapping(path = "/cae", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> solicitarCae(@RequestParam String tenantName, @RequestBody FeCaeSolicitarRequestDto request) {
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		try {
+			return ResponseEntity.ok(arcaService.solicitarCae(tenant, request));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
+
+	@PostMapping(path = "/cbte/proximo", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> getProximoCbte(@RequestParam String tenantName, @RequestBody NextCbteRequestDto request) {
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		try {
+			return ResponseEntity.ok(arcaService.getProximoCbte(tenant, request));
 		} catch (Exception e) {
 			return ResponseEntity.badRequest().body(e.getMessage());
 		}
