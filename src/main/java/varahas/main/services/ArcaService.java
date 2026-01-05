@@ -412,6 +412,108 @@ public class ArcaService {
 	    throw new RuntimeException("Error consultando FEParamGetTiposCbte. Detalle:\n" + tries);
 	}
 
+	public varahas.main.dto.FeParamGetTiposDocResponseDto getTiposDoc(Tenant tenant) {
+		if (tenant == null) {
+			throw new IllegalArgumentException("Tenant nulo");
+		}
+		if (tenant.getArcaToken() == null || tenant.getArcaToken().isBlank() || tenant.getArcaSign() == null
+				|| tenant.getArcaSign().isBlank()) {
+			throw new IllegalArgumentException("Tenant sin token/sign de ARCA");
+		}
+		if (tenant.getCuil() == null || tenant.getCuil().isBlank()) {
+			throw new IllegalArgumentException("Tenant sin CUIT/CUIL configurado");
+		}
+
+		String endpoint = resolveWsfeEndpoint();
+		String cuit = escXml(tenant.getCuil().replaceAll("\\D", ""));
+		String token = escXml(tenant.getArcaToken());
+		String sign = escXml(tenant.getArcaSign());
+
+		String envelope = """
+				<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ar="http://ar.gov.afip.dif.FEV1/">
+				  <soapenv:Header/>
+				  <soapenv:Body>
+				    <ar:FEParamGetTiposDoc>
+				      <ar:Auth>
+				        <ar:Token>%s</ar:Token>
+				        <ar:Sign>%s</ar:Sign>
+				        <ar:Cuit>%s</ar:Cuit>
+				      </ar:Auth>
+				    </ar:FEParamGetTiposDoc>
+				  </soapenv:Body>
+				</soapenv:Envelope>
+				""".formatted(token, sign, cuit);
+
+		var client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5))
+				.build();
+
+		String[] actions = { "\"http://ar.gov.afip.dif.FEV1/FEParamGetTiposDoc\"",
+				"http://ar.gov.afip.dif.FEV1/FEParamGetTiposDoc" };
+
+		StringBuilder tries = new StringBuilder();
+		for (String action : actions) {
+			try {
+				var req = HttpRequest.newBuilder(URI.create(endpoint)).header("Content-Type", "text/xml; charset=utf-8")
+						.header("Accept", "text/xml").header("SOAPAction", action).timeout(Duration.ofSeconds(20))
+						.POST(HttpRequest.BodyPublishers.ofString(envelope, StandardCharsets.UTF_8)).build();
+
+				var resp = client.send(req, BodyHandlers.ofString(StandardCharsets.UTF_8));
+				if (resp.statusCode() != 200) {
+					String body = resp.body();
+					tries.append("Attempt SOAPAction=").append(action).append(" -> HTTP ").append(resp.statusCode())
+							.append(", body(head 500): ")
+							.append(body == null ? "null" : body.substring(0, Math.min(500, body.length()))).append("\n");
+					continue;
+				}
+				return parseTiposDoc(resp.body());
+			} catch (Exception ex) {
+				tries.append("Attempt SOAPAction=").append(action).append(" -> exception: ")
+						.append(ex.getClass().getSimpleName()).append(": ").append(ex.getMessage()).append("\n");
+			}
+		}
+		throw new RuntimeException("Error consultando FEParamGetTiposDoc. Detalle:\n" + tries);
+	}
+
+	private varahas.main.dto.FeParamGetTiposDocResponseDto parseTiposDoc(String soapXml) throws Exception {
+		var dbf = DocumentBuilderFactory.newInstance();
+		dbf.setNamespaceAware(true);
+		try {
+			dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+		} catch (Exception ignored) {
+		}
+		Document doc = dbf.newDocumentBuilder().parse(new InputSource(new StringReader(soapXml)));
+		XPath xp = XPathFactory.newInstance().newXPath();
+
+		String wsErr = xp.evaluate("string(//*[local-name()='Errors']/*[local-name()='Err']/*[local-name()='Msg'])", doc);
+		if (wsErr != null && !wsErr.isBlank()) {
+			throw new RuntimeException("WSFE error: " + wsErr);
+		}
+
+		NodeList nodes = (NodeList) xp.evaluate("//*[local-name()='DocTipo']", doc, XPathConstants.NODESET);
+		List<varahas.main.dto.FeParamGetTiposDocResponseDto.DocTipoDto> list = new ArrayList<>(Math.max(8, nodes.getLength()));
+		for (int i = 0; i < nodes.getLength(); i++) {
+			Element n = (Element) nodes.item(i);
+			String idStr = xp.evaluate("./*[local-name()='Id']/text()", n).trim();
+			String desc = xp.evaluate("./*[local-name()='Desc']/text()", n).trim();
+			String fchDesde = xp.evaluate("./*[local-name()='FchDesde']/text()", n).trim();
+			String fchHasta = xp.evaluate("./*[local-name()='FchHasta']/text()", n).trim();
+			
+			if (!idStr.isEmpty()) {
+				try {
+					list.add(varahas.main.dto.FeParamGetTiposDocResponseDto.DocTipoDto.builder()
+						.id(Integer.parseInt(idStr))
+						.desc(desc)
+						.fchDesde(fchDesde.isEmpty() ? null : fchDesde)
+						.fchHasta(fchHasta.isEmpty() || "NULL".equalsIgnoreCase(fchHasta) ? null : fchHasta)
+						.build());
+				} catch (NumberFormatException ignored) {
+				}
+			}
+		}
+		return varahas.main.dto.FeParamGetTiposDocResponseDto.builder().tiposDocumentos(list).build();
+	}
+
+
 	public Map<String, String> getTiposMonedas(Tenant tenant) {
 		if (tenant == null) {
 			throw new IllegalArgumentException("Tenant nulo");

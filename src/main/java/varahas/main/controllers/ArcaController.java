@@ -198,6 +198,16 @@ public class ArcaController {
 		}
 	}
 
+	@GetMapping("/documentos")
+	public ResponseEntity<?> getTiposDocList(@RequestParam String tenantName) {
+		Tenant tenant = tenantService.getTenantByName(tenantName);
+		try {
+			return ResponseEntity.ok(arcaService.getTiposDoc(tenant));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
+
 	@PostMapping(path = "/cae", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> solicitarCae(@RequestParam String tenantName, @RequestBody FeCaeSolicitarRequestDto request) {
 		Tenant tenant = tenantService.getTenantByName(tenantName);
