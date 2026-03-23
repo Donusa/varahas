@@ -57,4 +57,8 @@ public class ProductService {
         	  throw new IllegalTennantAccessException("Product does not belong to tennant");
         }
 	}
+
+	public List<Product> getProductsByIds(List<Long> ids) {
+		return productRepository.findAllById(ids);
+	}
 }

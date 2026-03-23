@@ -45,6 +45,11 @@ public class Tenant {
 	@OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonIgnore
     private List<User> users;
+	
+	@OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonIgnore
+	private List<SalesHistory> salesHistories;
+
 	@Column(unique = true, nullable = true)
 	private String mlUserId;
 	@Column(unique = true, nullable = true)
